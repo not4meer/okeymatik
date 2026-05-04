@@ -1,0 +1,86 @@
+{
+  "game": "okey101",
+  "rules": [
+    {
+      "id": "el_acma",
+      "keywords": ["el açma", "el açmak", "101 sayı", "açma eşiği", "per", "perler", "nasıl açılır", "kaç olunca açılır"],
+      "answer": "Okey 101'de el açabilmek için perlerinizin toplamı en az 101 olmalıdır. Alternatif olarak 5 çift toplayarak da açılabilirsiniz."
+    },
+    {
+      "id": "el_acmayan",
+      "keywords": ["açmayan", "el açamadı", "açamak", "202", "açmama cezası", "el açmayan ceza"],
+      "answer": "Tur sonunda eli açamamış olan oyuncu 202 ceza puanı alır.",
+      "penalty": 202
+    },
+    {
+      "id": "siler_normal",
+      "keywords": ["siler", "normal bitme", "normal bitti", "-101", "eksi 101", "ödül", "siler nedir", "puan düşer"],
+      "answer": "Normal bitişte biten oyuncunun skoru 101 azalır (siler: -101). Bu bir ödüldür, diğer oyuncuların kalan taşları normal şekilde sayılır.",
+      "siler": -101
+    },
+    {
+      "id": "okey_atarak_bitme",
+      "keywords": ["okey atarak bitme", "okey siler", "joker bitiş", "-202", "okey ile bitmek", "okey atarak"],
+      "answer": "Okey taşıyla biten oyuncu -202 siler alır (200 puan düşer). Ayrıca diğer oyuncuların cezaları 2 katına çıkar.",
+      "siler": -202
+    },
+    {
+      "id": "elden_bitme",
+      "keywords": ["elden bitme", "elden bitmek", "800 atmak", "hiç kimse açmadan", "el açılmadan", "elden siler", "800"],
+      "answer": "Hiç kimse elini açmadan biten oyuncu -202 siler alır (bazı kurallarda -404). Diğer oyuncular ise 404 ceza alır (okey atarak bittiyse 808).",
+      "siler": -202,
+      "others_penalty": 404
+    },
+    {
+      "id": "okey_katlayici",
+      "keywords": ["okey katlayıcı", "2 kat", "iki kat", "ceza iki katı", "okey bitti ceza", "okey atarsa"],
+      "answer": "Okey taşıyla biten oyuncu varsa, diğer tüm oyuncuların o eldeki kalan taş cezaları 2 katına çıkar.",
+      "multiplier": 2
+    },
+    {
+      "id": "cift_acti",
+      "keywords": ["çift açtı", "çift açan", "çiftten açmak", "çift ceza", "5 çift açma", "çift giden"],
+      "answer": "Çiftten (5 çift) elini açan oyuncunun elinde kalan taşlar 2 kat ceza olarak hesaplanır.",
+      "multiplier": 2
+    },
+    {
+      "id": "islek_tas",
+      "keywords": ["işlek", "işlek taş", "yere işleme", "yanlış taş", "işlek ceza", "işlek ne demek"],
+      "answer": "Yere koyulan bir seriye eklenebilecek (işlek) bir taşı atarsanız anında 101 puan ceza alırsınız.",
+      "penalty": 101
+    },
+    {
+      "id": "okey_iskat_101",
+      "keywords": ["okey ıskat", "okeyi yere attı", "okey taşı yere", "yanlış okey 101"],
+      "answer": "Okey 101'de okey taşını yanlışlıkla yere atan oyuncu 101 ceza puanı alır.",
+      "penalty": 101
+    },
+    {
+      "id": "esli_oyun",
+      "keywords": ["eşli", "partner", "eş", "takım", "ikili", "çift oyun", "eşli nasıl"],
+      "answer": "Eşli oyunda bir oyuncu bitirirse, eşinin o eldeki normal ceza puanı silinir. Bireysel cezalar (işlek taş gibi) geçerli kalmaya devam eder."
+    },
+    {
+      "id": "esli_ceza",
+      "keywords": ["eşin cezası", "partner ceza", "takım ceza", "eş ceza silinir", "eş kazanır"],
+      "answer": "Eşli oyunda bitiren oyuncunun eşinin o eldeki taş cezası sıfırlanır. Sadece o oyuncunun bireysel cezaları (işlek gibi) kalır."
+    },
+    {
+      "id": "eldeki_okey",
+      "keywords": ["elde okey", "eldeki okey", "elinde okey", "okey puanı", "+101 okey", "elinde kalan okey"],
+      "answer": "Okey 101'de elde kalan bir okey taşı +101 ek ceza puanı olarak yazılır. Diğer taşların değerine eklenir.",
+      "penalty": 101
+    },
+    {
+      "id": "cift_okey_bitis",
+      "keywords": ["çift açan okey attı", "çift açtı okey", "çift okey atarak bitmek", "4 kat"],
+      "answer": "Çiftten açan bir oyuncu okey atarak biterse, diğer oyuncuların cezaları 4 katına çıkar. Bitiren -202 siler alır.",
+      "multiplier": 4
+    },
+    {
+      "id": "genel_101",
+      "keywords": ["nasıl oynanır", "101 nasıl", "temel kurallar", "kural nedir", "genel kural", "oyun anlatır"],
+      "answer": "Okey 101: Her el sonunda kalan taşlar ceza olarak yazılır. El açmak için 101 değeri veya 5 çift gerekir. Bitiren oyuncu siler (-101) alır. El açamayan 202 ceza alır. Okey atarak bitiş için ek ödüller ve çarpanlar vardır."
+    }
+  ]
+}

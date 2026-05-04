@@ -1,0 +1,27 @@
+# Flutter/Dart
+okey_skor/.dart_tool/
+okey_skor/.flutter-plugins
+okey_skor/.flutter-plugins-dependencies
+okey_skor/.pub-cache/
+okey_skor/.pub/
+okey_skor/build/
+
+# Android
+okey_skor/android/.gradle/
+okey_skor/android/local.properties
+okey_skor/android/key.properties
+okey_skor/android/app/google-services.json
+
+# iOS
+okey_skor/ios/.symlinks/
+okey_skor/ios/Pods/
+okey_skor/ios/Flutter/Flutter.framework
+okey_skor/ios/Flutter/Flutter.podspec
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Claude
+.claude/
