@@ -47,11 +47,6 @@ class ScoreScreen extends ConsumerWidget {
               tooltip: 'Son eli geri al',
               onPressed: () => _undo(context, ref),
             ),
-          IconButton(
-            icon: Icon(hidden ? Icons.visibility_rounded : Icons.visibility_off_rounded),
-            tooltip: hidden ? 'Göster' : 'Gizle',
-            onPressed: () => ref.read(scoresHiddenProvider.notifier).state = !hidden,
-          ),
         ],
       ),
       body: Column(
@@ -74,10 +69,12 @@ class ScoreScreen extends ConsumerWidget {
           // BOTTOM: controls
           _BottomBar(
             session: session,
+            hidden: hidden,
             onEnterScore: () => _addRound(context, ref, session.gameType),
             onDice: () => _openDice(context),
             onCalc: () => _openCalc(context),
             onChat: () => _openChat(context),
+            onToggleHide: () => ref.read(scoresHiddenProvider.notifier).state = !hidden,
           ),
           const BannerAdWidget(),
         ],
@@ -402,26 +399,28 @@ class _PlayerCard extends StatelessWidget {
 
 class _BottomBar extends StatelessWidget {
   final GameSession session;
+  final bool hidden;
   final VoidCallback onEnterScore;
   final VoidCallback onDice;
   final VoidCallback onCalc;
   final VoidCallback onChat;
+  final VoidCallback onToggleHide;
 
   const _BottomBar({
     required this.session,
+    required this.hidden,
     required this.onEnterScore,
     required this.onDice,
     required this.onCalc,
     required this.onChat,
+    required this.onToggleHide,
   });
 
   @override
   Widget build(BuildContext context) {
     final roundCount = session.rounds.where((r) => r.label != 'Ceza').length;
     final totalRounds = session.totalRounds;
-    final roundLabel = totalRounds != null
-        ? 'El $roundCount / $totalRounds'
-        : 'El $roundCount';
+    final roundLabel = totalRounds != null ? 'El $roundCount / $totalRounds' : 'El $roundCount';
 
     return Container(
       color: AppColors.surface,
@@ -433,6 +432,12 @@ class _BottomBar extends StatelessWidget {
             children: [
               Text(roundLabel, style: const TextStyle(color: Colors.white38, fontSize: 13)),
               const Spacer(),
+              _IconBtn(
+                icon: hidden ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                onTap: onToggleHide,
+                tooltip: hidden ? 'Skorları Göster' : 'Skorları Gizle',
+              ),
+              const SizedBox(width: 4),
               _IconBtn(icon: Icons.calculate_outlined, onTap: onCalc, tooltip: 'Taş Hesaplayıcı'),
               const SizedBox(width: 4),
               _IconBtn(icon: Icons.casino_outlined, onTap: onDice, tooltip: 'Zar At'),
