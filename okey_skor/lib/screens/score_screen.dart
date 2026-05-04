@@ -349,26 +349,21 @@ class _PlayerCard extends StatelessWidget {
           const SizedBox(height: 8),
           // Last round delta
           if (lastDelta != null) ...[
-            Text(
-              hidden
-                  ? '—'
-                  : lastDelta == 0
-                      ? '—'
-                      : lastDelta! > 0
-                          ? '+$lastDelta'
-                          : '$lastDelta',
-              style: TextStyle(
-                color: hidden
-                    ? Colors.white24
-                    : lastDelta! < 0
-                        ? AppColors.siler
-                        : lastDelta == 0
-                            ? Colors.white24
-                            : AppColors.penalty,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Builder(builder: (context) {
+              final d = lastDelta!;
+              return Text(
+                hidden || d == 0 ? '—' : d > 0 ? '+$d' : '$d',
+                style: TextStyle(
+                  color: hidden || d == 0
+                      ? Colors.white24
+                      : d < 0
+                          ? AppColors.siler
+                          : AppColors.penalty,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            }),
             const SizedBox(height: 4),
           ],
           // Total score

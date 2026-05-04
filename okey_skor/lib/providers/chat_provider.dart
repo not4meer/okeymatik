@@ -19,25 +19,22 @@ final chatProvider = StateNotifierProvider<ChatNotifier, List<ChatMessage>>((ref
 
 class ChatNotifier extends StateNotifier<List<ChatMessage>> {
   final ChatService _svc;
-  bool _ready = false;
 
   ChatNotifier(this._svc) : super([
     ChatMessage(
       text: 'Merhaba! Okey veya Okey 101 kurallarını sorabilirsiniz. Örnek: "101\'de siler kaç puan?" veya "Okeyde çiftten bitiş kaç puan?"',
       isUser: false,
     ),
-  ]);
+  ]) {
+    _svc.init(); // preload rules on startup
+  }
 
   Future<void> send(String question, {GameType? activeGame}) async {
     if (question.trim().isEmpty) return;
 
     state = [...state, ChatMessage(text: question, isUser: true)];
 
-    if (!_ready) {
-      await _svc.init();
-      _ready = true;
-    }
-
+    await _svc.init(); // no-op if already loaded
     final answer = _svc.answer(question, activeGame);
     state = [...state, ChatMessage(text: answer, isUser: false)];
   }
