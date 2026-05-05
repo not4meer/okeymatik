@@ -1,93 +1,76 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../models/game_enums.dart';
+import '../core/config.dart';
 
 class ChatService {
-  List<Map<String, dynamic>>? _okeyRules;
-  List<Map<String, dynamic>>? _okey101Rules;
+  String? _rulesContext;
 
   Future<void> init() async {
-    if (_okeyRules != null) return;
+    if (_rulesContext != null) return;
     try {
       final okeyJson = await rootBundle.loadString('assets/rules/okey_rules.json');
       final okey101Json = await rootBundle.loadString('assets/rules/okey101_rules.json');
-      final okeyData = jsonDecode(okeyJson) as Map<String, dynamic>;
-      final okey101Data = jsonDecode(okey101Json) as Map<String, dynamic>;
-      _okeyRules = List<Map<String, dynamic>>.from(okeyData['rules'] as List);
-      _okey101Rules = List<Map<String, dynamic>>.from(okey101Data['rules'] as List);
+      _rulesContext = 'OKEY 101 KURALLARI:\n$okey101Json\n\nKLASİK OKEY KURALLARI:\n$okeyJson';
     } catch (_) {
-      _okeyRules = [];
-      _okey101Rules = [];
+      _rulesContext = '';
     }
   }
 
-  String answer(String question, GameType? activeGame) {
-    final q = _normalize(question);
+  Future<String> answer(String question, GameType? activeGame) async {
+    await init();
 
-    // Detect which game the question is about (use normalized strings)
-    GameType? detected = activeGame;
-    if (q.contains('101') || q.contains('siler') || q.contains('acma esigi') || q.contains('el acmayan')) {
-      detected = GameType.okey101;
-    } else if (q.contains('gosterge') && !q.contains('101')) {
-      detected = GameType.classicOkey;
-    }
+    final gameContext = activeGame == GameType.okey101
+        ? 'Oyuncu şu an Okey 101 oynuyor.'
+        : activeGame == GameType.classicOkey
+            ? 'Oyuncu şu an Klasik Okey oynuyor.'
+            : '';
 
-    final rules = detected == GameType.okey101 ? (_okey101Rules ?? []) : (_okeyRules ?? []);
+    final systemPrompt = '''Sen Okeymatik uygulamasının Okey ve Okey 101 kural asistanısın.
+Sadece Okey ve Okey 101 oyun kurallarıyla ilgili sorulara yanıt ver.
+Yanıtlarını kısa, net ve Türkçe olarak ver. Maksimum 3-4 cümle.
+$gameContext
 
-    // Score each rule by keyword match count
-    Map<String, dynamic>? bestRule;
-    int bestScore = 0;
+Oyun kuralları:
+${_rulesContext ?? ''}
 
-    for (final rule in rules) {
-      final keywords = List<String>.from(rule['keywords'] as List? ?? []);
-      int score = 0;
-      for (final kw in keywords) {
-        if (q.contains(_normalize(kw))) {
-          score++;
+Kural dışı sorularda sadece: "Yalnızca Okey kuralları hakkında yardımcı olabiliyorum." de.''';
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${AppConfig.groqApiKey}',
+            },
+            body: jsonEncode({
+              'model': 'llama-3.3-70b-versatile',
+              'messages': [
+                {'role': 'system', 'content': systemPrompt},
+                {'role': 'user', 'content': question},
+              ],
+              'temperature': 0.2,
+              'max_tokens': 300,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final choices = data['choices'] as List?;
+        if (choices != null && choices.isNotEmpty) {
+          return choices[0]['message']['content'] as String;
         }
+        return 'Yanıt alınamadı. Tekrar deneyin.';
+      } else if (response.statusCode == 401) {
+        return 'API anahtarı geçersiz.';
+      } else {
+        return 'Sunucu hatası (${response.statusCode}). Tekrar deneyin.';
       }
-      if (score > bestScore) {
-        bestScore = score;
-        bestRule = rule;
-      }
+    } catch (_) {
+      return 'Bağlantı hatası. İnternet bağlantınızı kontrol edin.';
     }
-
-    if (bestScore == 0) {
-      // Also try the other game's rules as fallback
-      final fallback = detected == GameType.okey101 ? (_okeyRules ?? []) : (_okey101Rules ?? []);
-      for (final rule in fallback) {
-        final keywords = List<String>.from(rule['keywords'] as List? ?? []);
-        int score = 0;
-        for (final kw in keywords) {
-          if (q.contains(_normalize(kw))) score++;
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          bestRule = rule;
-        }
-      }
-    }
-
-    if (bestRule == null || bestScore == 0) {
-      return 'Bu soruya tam olarak cevap veremiyorum. Okey veya 101 kurallarıyla ilgili daha spesifik bir soru sorabilirsiniz.';
-    }
-
-    final gamePrefix = detected == GameType.okey101 ? '🟡 Okey 101: ' : '🟢 Klasik Okey: ';
-    return '$gamePrefix${bestRule['answer']}';
   }
-
-  String _normalize(String s) => s
-      .toLowerCase()
-      .replaceAll('ı', 'i')
-      .replaceAll('ğ', 'g')
-      .replaceAll('ü', 'u')
-      .replaceAll('ş', 's')
-      .replaceAll('ö', 'o')
-      .replaceAll('ç', 'c')
-      .replaceAll('İ', 'i')
-      .replaceAll('Ğ', 'g')
-      .replaceAll('Ü', 'u')
-      .replaceAll('Ş', 's')
-      .replaceAll('Ö', 'o')
-      .replaceAll('Ç', 'c');
 }

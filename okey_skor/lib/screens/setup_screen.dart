@@ -15,13 +15,15 @@ class SetupScreen extends ConsumerStatefulWidget {
 }
 
 class _SetupScreenState extends ConsumerState<SetupScreen> {
-  final _controllers = List.generate(4, (_) => TextEditingController());
+  final _playerCtrls = List.generate(4, (_) => TextEditingController());
+  final _teamCtrls = List.generate(2, (_) => TextEditingController());
   final _roundCtrl = TextEditingController();
   GameMode _mode = GameMode.solo;
 
   @override
   void dispose() {
-    for (final c in _controllers) c.dispose();
+    for (final c in _playerCtrls) { c.dispose(); }
+    for (final c in _teamCtrls) { c.dispose(); }
     _roundCtrl.dispose();
     super.dispose();
   }
@@ -29,6 +31,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   Widget build(BuildContext context) {
     final is101 = widget.gameType == GameType.okey101;
+    final isPaired = is101 && _mode == GameMode.paired;
 
     return Scaffold(
       appBar: AppBar(title: Text(is101 ? 'Okey 101' : 'Klasik Okey')),
@@ -39,7 +42,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              // Mode toggle — only for 101
               if (is101) ...[
                 const _Label('Oyun Modu'),
                 const SizedBox(height: 10),
@@ -64,33 +66,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 ),
                 const SizedBox(height: 24),
               ],
-              // Player names
-              const _Label('Oyuncu İsimleri'),
+              _Label(isPaired ? 'Takım İsimleri' : 'Oyuncu İsimleri'),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView.separated(
-                  itemCount: 4,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final isPaired = is101 && _mode == GameMode.paired;
-                    final hints = isPaired
-                        ? ['Oyuncu 1 (Takım A)', 'Oyuncu 2 (Takım B)', 'Oyuncu 3 (Takım A)', 'Oyuncu 4 (Takım B)']
-                        : ['Oyuncu 1', 'Oyuncu 2', 'Oyuncu 3', 'Oyuncu 4'];
-                    const colors = [Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFFFF9800), Color(0xFFE91E63)];
-                    return TextField(
-                      controller: _controllers[i],
-                      textCapitalization: TextCapitalization.words,
-                      keyboardType: TextInputType.name,
-                      decoration: InputDecoration(
-                        hintText: hints[i],
-                        prefixIcon: Icon(Icons.person_outline, color: colors[i], size: 20),
-                      ),
-                      style: const TextStyle(fontSize: 16, color: Colors.white),
-                    );
-                  },
-                ),
+                child: isPaired ? _teamInputs() : _playerInputs(),
               ),
-              // Round count
               const SizedBox(height: 16),
               const _Label('Tur Sayısı (isteğe bağlı)'),
               const SizedBox(height: 8),
@@ -104,15 +84,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 ),
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
-              if (is101 && _mode == GameMode.paired)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    'Takım A: Oyuncu 1 & 3  ·  Takım B: Oyuncu 2 & 4',
-                    style: TextStyle(fontSize: 11, color: AppColors.primary.withOpacity(0.7)),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
               const SizedBox(height: 16),
               ElevatedButton(onPressed: _start, child: const Text('Oyunu Başlat')),
               const SizedBox(height: 12),
@@ -123,8 +94,56 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
+  Widget _playerInputs() {
+    const colors = [Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFFFF9800), Color(0xFFE91E63)];
+    const hints = ['Oyuncu 1', 'Oyuncu 2', 'Oyuncu 3', 'Oyuncu 4'];
+    return ListView.separated(
+      itemCount: 4,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => TextField(
+        controller: _playerCtrls[i],
+        textCapitalization: TextCapitalization.words,
+        keyboardType: TextInputType.name,
+        decoration: InputDecoration(
+          hintText: hints[i],
+          prefixIcon: Icon(Icons.person_outline, color: colors[i], size: 20),
+        ),
+        style: const TextStyle(fontSize: 16, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _teamInputs() {
+    const colors = [Color(0xFF4CAF50), Color(0xFF2196F3)];
+    const hints = ['Takım A', 'Takım B'];
+    return ListView.separated(
+      itemCount: 2,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => TextField(
+        controller: _teamCtrls[i],
+        textCapitalization: TextCapitalization.words,
+        keyboardType: TextInputType.name,
+        decoration: InputDecoration(
+          hintText: hints[i],
+          prefixIcon: Icon(Icons.group_outlined, color: colors[i], size: 20),
+        ),
+        style: const TextStyle(fontSize: 16, color: Colors.white),
+      ),
+    );
+  }
+
   void _start() {
-    final names = _controllers.map((c) => c.text).toList();
+    final List<String> names;
+    if (_mode == GameMode.paired) {
+      final a = _teamCtrls[0].text.trim().isEmpty ? 'Takım A' : _teamCtrls[0].text.trim();
+      final b = _teamCtrls[1].text.trim().isEmpty ? 'Takım B' : _teamCtrls[1].text.trim();
+      // players[0,2] = Team A, players[1,3] = Team B
+      // Suffix helps distinguish in winner picker
+      names = ['$a 1', '$b 1', '$a 2', '$b 2'];
+    } else {
+      names = _playerCtrls.map((c) => c.text).toList();
+    }
+
     final pairs = _mode == GameMode.paired ? [[0, 2], [1, 3]] : <List<int>>[];
     final totalRounds = int.tryParse(_roundCtrl.text);
 
@@ -170,7 +189,7 @@ class _Chip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withOpacity(0.2) : AppColors.card,
+          color: selected ? AppColors.primary.withValues(alpha: 0.2) : AppColors.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: selected ? AppColors.primary : Colors.white12, width: 1.5),
         ),

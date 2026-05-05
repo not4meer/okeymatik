@@ -3,30 +3,35 @@ enum GameType { classicOkey, okey101 }
 enum GameMode { solo, paired }
 
 enum ClassicFinishType {
-  normal,           // 2 puan
-  okeyIle,          // 4 puan
-  ciftten,          // 4 puan (7 çift)
-  okeyIleCiftten,   // 8 puan
+  normal,           // winner -2, others +2
+  okeyIle,          // winner -4, others +4
+  elden,            // winner -4, others +4
+  ciftten,          // winner -4, others +4
+  okeyIleCiftten,   // winner -8, others +8
 }
 
 enum Okey101FinishType {
-  normal,     // siler: -101
-  okeyAtarak, // siler: -202, others x2
-  elden,      // siler: -202, others: 404
-  eldenOkey,  // siler: -404, others: 808
+  normal,        // siler: -101,  el açmış: ×1,  el açmamış: +202
+  okeyAtarak,    // siler: -202,  el açmış: ×2,  el açmamış: +404
+  elden,         // siler: -202,  el açmış: ×2,  el açmamış: +404
+  eldenOkey,     // siler: -404,  el açmış: ×4,  el açmamış: +808
+  ciftBitis,     // siler: -202,  el açmış: ×2,  el açmamış: +404
+  ciftOkeyBitis, // siler: -404,  el açmış: ×4,  el açmamış: +808
 }
 
 extension ClassicFinishTypeLabel on ClassicFinishType {
   String get label {
     switch (this) {
       case ClassicFinishType.normal:
-        return 'Normal (2p)';
+        return 'Normal (-2/+2)';
       case ClassicFinishType.okeyIle:
-        return 'Okey ile (4p)';
+        return 'Okey ile (-4/+4)';
+      case ClassicFinishType.elden:
+        return 'Elden (-4/+4)';
       case ClassicFinishType.ciftten:
-        return 'Çiftten (4p)';
+        return 'Çiftten (-4/+4)';
       case ClassicFinishType.okeyIleCiftten:
-        return 'Okey+Çift (8p)';
+        return 'Okey+Çift (-8/+8)';
     }
   }
 
@@ -35,6 +40,8 @@ extension ClassicFinishTypeLabel on ClassicFinishType {
       case ClassicFinishType.normal:
         return 2;
       case ClassicFinishType.okeyIle:
+        return 4;
+      case ClassicFinishType.elden:
         return 4;
       case ClassicFinishType.ciftten:
         return 4;
@@ -55,6 +62,10 @@ extension Okey101FinishTypeLabel on Okey101FinishType {
         return 'Elden (-202)';
       case Okey101FinishType.eldenOkey:
         return 'Elden+Okey (-404)';
+      case Okey101FinishType.ciftBitis:
+        return 'Çift Bitiş (-202)';
+      case Okey101FinishType.ciftOkeyBitis:
+        return 'Çift+Okey (-404)';
     }
   }
 }

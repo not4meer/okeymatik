@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
-import '../engines/okey101_engine.dart';
 import '../models/game_enums.dart';
 import '../models/game_session.dart';
 import '../models/player.dart';
@@ -18,363 +17,334 @@ class Okey101RoundSheet extends ConsumerStatefulWidget {
 }
 
 class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
-  String? _winnerId;
+  String? _activeId;
   Okey101FinishType _finishType = Okey101FinishType.normal;
-  final Map<String, _PlayerEntry> _data = {};
+  final Map<String, TextEditingController> _ctrls = {};
+  final Map<String, FocusNode> _nodes = {};
 
-  final _engine = Okey101Engine();
+  static const _colors = [
+    Color(0xFF4CAF50),
+    Color(0xFF2196F3),
+    Color(0xFFFF9800),
+    Color(0xFFE91E63),
+  ];
 
-  void _initData(List<Player> players) {
+  @override
+  void dispose() {
+    for (final c in _ctrls.values) c.dispose();
+    for (final n in _nodes.values) n.dispose();
+    super.dispose();
+  }
+
+  void _init(List<Player> players) {
     for (final p in players) {
-      _data.putIfAbsent(p.id, () => _PlayerEntry());
+      _ctrls.putIfAbsent(p.id, () => TextEditingController());
+      _nodes.putIfAbsent(p.id, () => FocusNode());
     }
   }
 
-  bool get _isElden =>
-      _finishType == Okey101FinishType.elden ||
-      _finishType == Okey101FinishType.eldenOkey;
+  int? _scoreFor(String id) => int.tryParse(_ctrls[id]?.text.trim() ?? '');
+
+  void _setQuick(String id, int value) {
+    setState(() {
+      final ctrl = _ctrls[id];
+      if (ctrl == null) return;
+      ctrl.text = value.toString();
+      ctrl.selection = TextSelection.collapsed(offset: ctrl.text.length);
+    });
+  }
+
+  RoundScore _buildRound(GameSession session) {
+    final isPaired = session.gameMode == GameMode.paired && session.pairs.length == 2;
+    final deltas = <String, int>{};
+    if (isPaired) {
+      for (final pair in session.pairs) {
+        final score = _scoreFor(session.players[pair[0]].id) ?? 0;
+        for (final i in pair) {
+          deltas[session.players[i].id] = score;
+        }
+      }
+    } else {
+      for (final p in session.players) {
+        deltas[p.id] = _scoreFor(p.id) ?? 0;
+      }
+    }
+    String? winnerId;
+    if (deltas.isNotEmpty) {
+      final minEntry = deltas.entries.reduce((a, b) => a.value < b.value ? a : b);
+      if (minEntry.value < 0) winnerId = minEntry.key;
+    }
+    return RoundScore(deltas: deltas, winnerId: winnerId, label: _finishType.label);
+  }
+
+  bool get _canSave => _ctrls.values.any((c) => c.text.trim().isNotEmpty);
+
+  void _submit() => Navigator.pop(context, _buildRound(ref.read(gameSessionProvider)!));
 
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(gameSessionProvider)!;
-    final players = session.players;
-    _initData(players);
+    _init(session.players);
+
+    final isPaired = session.gameMode == GameMode.paired && session.pairs.length == 2;
+
+    // Build display tiles (2 in paired mode, 4 in solo)
+    final List<({String id, String name, Color color})> tiles;
+    if (isPaired) {
+      tiles = [
+        for (int i = 0; i < session.pairs.length; i++)
+          () {
+            final pair = session.pairs[i];
+            final first = session.players[pair[0]];
+            String name = first.name;
+            if (name.endsWith(' 1') || name.endsWith(' 2')) {
+              name = name.substring(0, name.length - 2).trim();
+            }
+            return (id: first.id, name: name, color: _colors[pair[0] % _colors.length]);
+          }(),
+      ];
+    } else {
+      tiles = [
+        for (int i = 0; i < session.players.length; i++)
+          (
+            id: session.players[i].id,
+            name: session.players[i].name,
+            color: _colors[i % _colors.length],
+          ),
+      ];
+    }
+
+    final activeId = _activeId;
+    final activeTile = activeId != null
+        ? tiles.where((t) => t.id == activeId).firstOrNull
+        : null;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.92,
+      initialChildSize: 0.65,
       maxChildSize: 0.95,
-      minChildSize: 0.5,
-      builder: (_, scroll) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                children: [
-                  SheetHandle(),
-                  SizedBox(height: 14),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'El Sonucu - Okey 101',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+      minChildSize: 0.4,
+      builder: (_, __) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SheetHandle(),
+                      SizedBox(height: 14),
+                      Text(
+                        'El Sonucu — Okey 101',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                controller: scroll,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  const SheetSectionLabel('Biten Oyuncu'),
-                  const SizedBox(height: 10),
-                  SheetPlayerGrid(
-                    players: players,
-                    selectedId: _winnerId,
-                    onSelect: (id) => setState(() => _winnerId = id),
-                  ),
-                  const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 12),
 
-                  const SheetSectionLabel('Bitis Turu'),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: Okey101FinishType.values.map((t) {
-                      return SheetTypeChip(
-                        label: t.label,
-                        selected: _finishType == t,
-                        onTap: () => setState(() => _finishType = t),
+                // Finish type chips
+                SizedBox(
+                  height: 38,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: Okey101FinishType.values
+                        .map((t) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: SheetTypeChip(
+                                label: t.label,
+                                selected: _finishType == t,
+                                onTap: () => setState(() => _finishType = t),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Player / team tiles
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: tiles.map((tile) {
+                      final score = _scoreFor(tile.id);
+                      final isActive = tile.id == activeId;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() => _activeId = tile.id);
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _nodes[tile.id]?.requestFocus();
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 14, horizontal: 6),
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? tile.color.withValues(alpha: 0.15)
+                                    : AppColors.card,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isActive ? tile.color : Colors.white12,
+                                  width: isActive ? 2 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    tile.name,
+                                    style: TextStyle(
+                                      color: isActive ? tile.color : Colors.white54,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    score == null
+                                        ? '—'
+                                        : score < 0
+                                            ? '$score'
+                                            : '+$score',
+                                    style: TextStyle(
+                                      color: score == null
+                                          ? Colors.white24
+                                          : score < 0
+                                              ? AppColors.siler
+                                              : AppColors.penalty,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 20),
+                ),
+                const SizedBox(height: 16),
 
-                  // Per-player inputs (skip in elden mode)
-                  if (!_isElden && _winnerId != null) ...[
-                    const SheetSectionLabel('Oyuncu Durumlari'),
-                    const SizedBox(height: 12),
-                    ...players
-                        .where((p) => p.id != _winnerId)
-                        .map((p) => _PlayerCard(
-                              player: p,
-                              entry: _data[p.id]!,
-                              onChanged: (e) => setState(() => _data[p.id] = e),
-                            )),
-                  ],
-
-                  // Winner islek penalty
-                  if (_winnerId != null) ...[
-                    const SizedBox(height: 8),
-                    SheetCheckRow(
-                      label: 'Biten oyuncu islek tas atti (+101)',
-                      value: _data[_winnerId!]?.islikCeza ?? false,
-                      onChanged: (v) => setState(() {
-                        _data[_winnerId!] =
-                            (_data[_winnerId!] ?? _PlayerEntry()).copyWith(islikCeza: v);
-                      }),
+                // Score input + quick buttons (shown when a tile is active)
+                if (activeTile != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _ctrls[activeTile.id],
+                          focusNode: _nodes[activeTile.id],
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
+                          ],
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: activeTile.color,
+                            fontSize: 40,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: '0',
+                            hintStyle: const TextStyle(
+                                color: Colors.white24, fontSize: 40),
+                            filled: true,
+                            fillColor: AppColors.card,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: activeTile.color, width: 2),
+                            ),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [-101, -202, -404].map((s) {
+                            final current = _scoreFor(activeTile.id);
+                            final sel = current == s;
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => _setQuick(activeTile.id, s),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 100),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 11),
+                                  decoration: BoxDecoration(
+                                    color: sel
+                                        ? AppColors.siler.withValues(alpha: 0.2)
+                                        : AppColors.card,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: sel
+                                          ? AppColors.siler
+                                          : Colors.white12,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '$s',
+                                    style: TextStyle(
+                                      color: sel
+                                          ? AppColors.siler
+                                          : Colors.white38,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
-                  // Elden: non-winner islek checkboxes
-                  if (_isElden && _winnerId != null) ...[
-                    const SizedBox(height: 4),
-                    ...players.where((p) => p.id != _winnerId).map((p) => SheetCheckRow(
-                          label: '${p.name} islek tas atti (+101)',
-                          value: _data[p.id]!.islikCeza,
-                          onChanged: (v) => setState(() {
-                            _data[p.id] = _data[p.id]!.copyWith(islikCeza: v);
-                          }),
-                        )),
-                  ],
-
-                  // Elden warning
-                  if (_isElden) ...[
-                    const SizedBox(height: 12),
-                    _EldenBanner(type: _finishType),
-                  ],
-
-                  // Live preview
-                  if (_winnerId != null) ...[
-                    const SizedBox(height: 16),
-                    SheetPreviewBox(
-                      round: _buildRound(session),
-                      players: players,
-                    ),
-                  ],
-
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _winnerId == null ? null : _submit,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  child: ElevatedButton(
+                    onPressed: _canSave ? _submit : null,
                     child: const Text('Kaydet'),
                   ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  RoundScore _buildRound(GameSession session) {
-    final playerData = <String, PlayerRoundData101>{};
-    for (final p in session.players) {
-      final d = _data[p.id] ?? _PlayerEntry();
-      playerData[p.id] = PlayerRoundData101(
-        remainingTiles: d.tiles,
-        elAcmadi: d.elAcmadi,
-        ciftActi: d.ciftActi,
-        islikCeza: d.islikCeza,
-        hasOkeyInHand: d.hasOkeyInHand,
-      );
-    }
-    return _engine.calculate({
-      'winnerId': _winnerId!,
-      'finishType': _finishType,
-      'playerData': playerData,
-      'partnerId': session.partnerOf(_winnerId!),
-    }, session.players);
-  }
-
-  void _submit() {
-    final round = _buildRound(ref.read(gameSessionProvider)!);
-    Navigator.pop(context, round);
-  }
-}
-
-// ── Local state ─────────────────────────────────────────
-
-class _PlayerEntry {
-  final int tiles;
-  final bool elAcmadi;
-  final bool ciftActi;
-  final bool islikCeza;
-  final bool hasOkeyInHand;
-
-  const _PlayerEntry({
-    this.tiles = 0,
-    this.elAcmadi = false,
-    this.ciftActi = false,
-    this.islikCeza = false,
-    this.hasOkeyInHand = false,
-  });
-
-  _PlayerEntry copyWith({
-    int? tiles,
-    bool? elAcmadi,
-    bool? ciftActi,
-    bool? islikCeza,
-    bool? hasOkeyInHand,
-  }) =>
-      _PlayerEntry(
-        tiles: tiles ?? this.tiles,
-        elAcmadi: elAcmadi ?? this.elAcmadi,
-        ciftActi: ciftActi ?? this.ciftActi,
-        islikCeza: islikCeza ?? this.islikCeza,
-        hasOkeyInHand: hasOkeyInHand ?? this.hasOkeyInHand,
-      );
-}
-
-// ── Player card ──────────────────────────────────────────
-
-class _PlayerCard extends StatefulWidget {
-  final Player player;
-  final _PlayerEntry entry;
-  final void Function(_PlayerEntry) onChanged;
-
-  const _PlayerCard({
-    required this.player,
-    required this.entry,
-    required this.onChanged,
-  });
-
-  @override
-  State<_PlayerCard> createState() => _PlayerCardState();
-}
-
-class _PlayerCardState extends State<_PlayerCard> {
-  late final TextEditingController _tileCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _tileCtrl = TextEditingController(
-      text: widget.entry.tiles > 0 ? widget.entry.tiles.toString() : '',
-    );
-  }
-
-  @override
-  void dispose() {
-    _tileCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final e = widget.entry;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.player.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SheetCheckRow(
-            label: 'El acmadi (+202)',
-            value: e.elAcmadi,
-            onChanged: (v) {
-              if (v) _tileCtrl.clear();
-              widget.onChanged(e.copyWith(elAcmadi: v, tiles: 0));
-            },
-          ),
-          if (!e.elAcmadi) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Text(
-                  'Kalan tas:',
-                  style: TextStyle(color: Colors.white54, fontSize: 13),
                 ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 72,
-                  child: TextField(
-                    controller: _tileCtrl,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(vertical: 8),
-                      hintText: '0',
-                    ),
-                    onChanged: (v) =>
-                        widget.onChanged(e.copyWith(tiles: int.tryParse(v) ?? 0)),
-                  ),
-                ),
+                const SizedBox(height: 20),
               ],
             ),
-            const SizedBox(height: 4),
-            SheetCheckRow(
-              label: 'Cift acti (kalan x2)',
-              value: e.ciftActi,
-              onChanged: (v) => widget.onChanged(e.copyWith(ciftActi: v)),
-            ),
-            SheetCheckRow(
-              label: 'Elinde okey var (+101)',
-              value: e.hasOkeyInHand,
-              onChanged: (v) => widget.onChanged(e.copyWith(hasOkeyInHand: v)),
-            ),
-          ],
-          SheetCheckRow(
-            label: 'Islek tas atti (+101)',
-            value: e.islikCeza,
-            onChanged: (v) => widget.onChanged(e.copyWith(islikCeza: v)),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Elden banner ─────────────────────────────────────────
-
-class _EldenBanner extends StatelessWidget {
-  final Okey101FinishType type;
-  const _EldenBanner({required this.type});
-
-  @override
-  Widget build(BuildContext context) {
-    final msg = type == Okey101FinishType.eldenOkey
-        ? 'Elden+Okey: Bitiren -404 siler, diger oyuncular 808 ceza alir.'
-        : 'Elden Bitme: Bitiren -202 siler, diger oyuncular 404 ceza alir.';
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.penalty.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.penalty.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.penalty, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              msg,
-              style: const TextStyle(color: AppColors.penalty, fontSize: 12),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

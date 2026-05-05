@@ -4,83 +4,93 @@
     {
       "id": "el_acma",
       "keywords": ["el açma", "el açmak", "101 sayı", "açma eşiği", "per", "perler", "nasıl açılır", "kaç olunca açılır"],
-      "answer": "Okey 101'de el açabilmek için perlerinizin toplamı en az 101 olmalıdır. Alternatif olarak 5 çift toplayarak da açılabilirsiniz."
+      "answer": "Okey 101'de el açabilmek için açtığınız perler/serilerin taş değerleri toplamı en az 101 olmalıdır. Alternatif olarak elde en az 5 farklı çift toplayarak da çift açılabilirsiniz. 13-1 bağlantısı geçerli değildir."
     },
     {
       "id": "el_acmayan",
       "keywords": ["açmayan", "el açamadı", "açamak", "202", "açmama cezası", "el açmayan ceza"],
-      "answer": "Tur sonunda eli açamamış olan oyuncu 202 ceza puanı alır.",
+      "answer": "Normal bitişte eli açamamış olan oyuncu +202 ceza puanı alır. Elden bitişte ise el açmamış oyuncular +404, elden+okey bitişte ise +808 ceza alır.",
       "penalty": 202
     },
     {
       "id": "siler_normal",
       "keywords": ["siler", "normal bitme", "normal bitti", "-101", "eksi 101", "ödül", "siler nedir", "puan düşer"],
-      "answer": "Normal bitişte biten oyuncunun skoru 101 azalır (siler: -101). Bu bir ödüldür, diğer oyuncuların kalan taşları normal şekilde sayılır.",
+      "answer": "Normal bitişte biten oyuncunun skoru 101 azalır (siler: -101). El açmış kaybedenler ellerindeki taşların değeri kadar ceza alır. El açmamış kaybedenler +202 sabit ceza alır.",
       "siler": -101
     },
     {
       "id": "okey_atarak_bitme",
       "keywords": ["okey atarak bitme", "okey siler", "joker bitiş", "-202", "okey ile bitmek", "okey atarak"],
-      "answer": "Okey taşıyla biten oyuncu -202 siler alır (200 puan düşer). Ayrıca diğer oyuncuların cezaları 2 katına çıkar.",
+      "answer": "Okey taşıyla biten oyuncu -202 siler alır. El açmış kaybedenler taşlarının 2 katı ceza, el açmamış kaybedenler +404 sabit ceza alır.",
       "siler": -202
     },
     {
       "id": "elden_bitme",
-      "keywords": ["elden bitme", "elden bitmek", "800 atmak", "hiç kimse açmadan", "el açılmadan", "elden siler", "800"],
-      "answer": "Hiç kimse elini açmadan biten oyuncu -202 siler alır (bazı kurallarda -404). Diğer oyuncular ise 404 ceza alır (okey atarak bittiyse 808).",
+      "keywords": ["elden bitme", "elden bitmek", "800 atmak", "hiç açmadan bitmek", "elden siler", "404"],
+      "answer": "Elden bitişte biten oyuncu hiç el açmadan tek seferde tüm taşlarını perler hâlinde açar. Biten -202 siler alır. El açmış kaybedenler taşlarının 2 katı ceza, el açmamış kaybedenler +404 sabit ceza alır.",
       "siler": -202,
-      "others_penalty": 404
+      "others_open_multiplier": 2,
+      "others_closed_penalty": 404
     },
     {
-      "id": "okey_katlayici",
-      "keywords": ["okey katlayıcı", "2 kat", "iki kat", "ceza iki katı", "okey bitti ceza", "okey atarsa"],
-      "answer": "Okey taşıyla biten oyuncu varsa, diğer tüm oyuncuların o eldeki kalan taş cezaları 2 katına çıkar.",
-      "multiplier": 2
+      "id": "elden_okey_bitme",
+      "keywords": ["elden okey", "elden okey atarak", "-404", "808", "elden okey bitiş"],
+      "answer": "Elden bitiş + son taş okey atılırsa biten -404 siler alır. El açmış kaybedenler taşlarının 4 katı ceza, el açmamış kaybedenler +808 sabit ceza alır.",
+      "siler": -404,
+      "others_open_multiplier": 4,
+      "others_closed_penalty": 808
     },
     {
-      "id": "cift_acti",
-      "keywords": ["çift açtı", "çift açan", "çiftten açmak", "çift ceza", "5 çift açma", "çift giden"],
-      "answer": "Çiftten (5 çift) elini açan oyuncunun elinde kalan taşlar 2 kat ceza olarak hesaplanır.",
+      "id": "cift_bitis",
+      "keywords": ["çift bitiş", "çift açarak bitme", "5 çift bitti", "çiftten siler", "-202 çift"],
+      "answer": "Çift açarak bitişte biten oyuncu -202 siler alır. El açmış kaybedenler taşlarının 2 katı ceza, el açmamış kaybedenler +404 sabit ceza alır.",
+      "siler": -202
+    },
+    {
+      "id": "cift_okey_bitis",
+      "keywords": ["çift açan okey attı", "çift okey atarak bitmek", "4 kat", "çift+okey", "808 çift"],
+      "answer": "Çift açarak + son taş okey ile bitişte biten -404 siler alır. El açmış kaybedenler taşlarının 4 katı ceza, el açmamış kaybedenler +808 sabit ceza alır.",
+      "siler": -404
+    },
+    {
+      "id": "cift_acti_kayip",
+      "keywords": ["çift açtı kaybetti", "çift açan kaybetti", "çift açan ceza", "çift açan kayıp"],
+      "answer": "Çiftten (5 çift) elini açan oyuncu kaybederse, elinde kalan taşların cezası 2 katı olarak hesaplanır. Örneğin 10 taş = 20 ceza (sonra bitiş türü çarpanıyla çarpılır).",
       "multiplier": 2
     },
     {
       "id": "islek_tas",
       "keywords": ["işlek", "işlek taş", "yere işleme", "yanlış taş", "işlek ceza", "işlek ne demek"],
-      "answer": "Yere koyulan bir seriye eklenebilecek (işlek) bir taşı atarsanız anında 101 puan ceza alırsınız.",
+      "answer": "El açmadan önce işlek taş atarsanız, yandan taş alıp el açamazsanız ya da açılmış serilere eklediğiniz taşı geri alırsanız +101 puan ceza alırsınız.",
       "penalty": 101
     },
     {
       "id": "okey_iskat_101",
-      "keywords": ["okey ıskat", "okeyi yere attı", "okey taşı yere", "yanlış okey 101"],
-      "answer": "Okey 101'de okey taşını yanlışlıkla yere atan oyuncu 101 ceza puanı alır.",
+      "keywords": ["okey ıskat", "okeyi yere attı", "okey taşı yere", "yanlış okey 101", "kimse açmadan okey"],
+      "answer": "Kimse el açmadan okey taşı atılırsa +101 ceza alınır; çünkü okey her zaman 'işlek' sayılır ve açılmış serilere eklenebilir.",
+      "penalty": 101
+    },
+    {
+      "id": "eldeki_okey",
+      "keywords": ["elde okey", "eldeki okey", "elinde okey", "okey puanı", "+101 okey", "elinde kalan okey"],
+      "answer": "El sonunda elde kalan okey taşı +101 ek ceza puanı olarak eklenir. Diğer taşların değerine ilave olarak uygulanır.",
       "penalty": 101
     },
     {
       "id": "esli_oyun",
       "keywords": ["eşli", "partner", "eş", "takım", "ikili", "çift oyun", "eşli nasıl"],
-      "answer": "Eşli oyunda bir oyuncu bitirirse, eşinin o eldeki normal ceza puanı silinir. Bireysel cezalar (işlek taş gibi) geçerli kalmaya devam eder."
+      "answer": "Eşli oyunda bir oyuncu bitirirse eşinin o eldeki taş cezası sıfırlanır. Bireysel cezalar (işlek taş gibi) geçerli kalmaya devam eder. Eşin biri elden bittiyse takım tek -202 alır."
     },
     {
-      "id": "esli_ceza",
-      "keywords": ["eşin cezası", "partner ceza", "takım ceza", "eş ceza silinir", "eş kazanır"],
-      "answer": "Eşli oyunda bitiren oyuncunun eşinin o eldeki taş cezası sıfırlanır. Sadece o oyuncunun bireysel cezaları (işlek gibi) kalır."
-    },
-    {
-      "id": "eldeki_okey",
-      "keywords": ["elde okey", "eldeki okey", "elinde okey", "okey puanı", "+101 okey", "elinde kalan okey"],
-      "answer": "Okey 101'de elde kalan bir okey taşı +101 ek ceza puanı olarak yazılır. Diğer taşların değerine eklenir.",
-      "penalty": 101
-    },
-    {
-      "id": "cift_okey_bitis",
-      "keywords": ["çift açan okey attı", "çift açtı okey", "çift okey atarak bitmek", "4 kat"],
-      "answer": "Çiftten açan bir oyuncu okey atarak biterse, diğer oyuncuların cezaları 4 katına çıkar. Bitiren -202 siler alır.",
-      "multiplier": 4
+      "id": "deste_bitmesi",
+      "keywords": ["deste bitti", "taşlar bitti", "kimse bitiremedi", "deste tükendi", "el iptali"],
+      "answer": "Deste taşları tükenirse ve kimse bitiremezse: El açmış oyuncular elindeki taş değerleri kadar ceza alır; el açmamış oyuncular +202 sabit ceza alır. Eşli oyunda 4 oyuncu da çift açarsa el iptal edilir, yeniden oynanır.",
+      "penalty": 202
     },
     {
       "id": "genel_101",
       "keywords": ["nasıl oynanır", "101 nasıl", "temel kurallar", "kural nedir", "genel kural", "oyun anlatır"],
-      "answer": "Okey 101: Her el sonunda kalan taşlar ceza olarak yazılır. El açmak için 101 değeri veya 5 çift gerekir. Bitiren oyuncu siler (-101) alır. El açamayan 202 ceza alır. Okey atarak bitiş için ek ödüller ve çarpanlar vardır."
+      "answer": "Okey 101: El açmak için perler toplamı ≥101 veya ≥5 çift gerekir. Normal bitişte biten -101 siler alır; el açmış kaybedenler taşları kadar ceza, el açmamış +202 ceza alır. Okey/elden/çift bitişlerde siler -202 ya da -404 olur, kaybedenler 2-4 kat ceza alır."
     }
   ]
 }

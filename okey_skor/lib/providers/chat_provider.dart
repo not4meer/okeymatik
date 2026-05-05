@@ -34,8 +34,7 @@ class ChatNotifier extends StateNotifier<List<ChatMessage>> {
 
     state = [...state, ChatMessage(text: question, isUser: true)];
 
-    await _svc.init(); // no-op if already loaded
-    final answer = _svc.answer(question, activeGame);
+    final answer = await _svc.answer(question, activeGame);
     state = [...state, ChatMessage(text: answer, isUser: false)];
   }
 

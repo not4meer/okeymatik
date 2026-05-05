@@ -2,50 +2,61 @@
   "game": "okey",
   "rules": [
     {
+      "id": "puan_sistemi",
+      "keywords": ["başlangıç", "başlangıç puanı", "kaçla başlanır", "puan sistemi", "nasıl sayılır", "düşme", "kaç puanla kazanılır"],
+      "answer": "Klasik Okey'de oyun 0 puandan başlar. Puanlar düşerek eksi yönde gider. En erken -101'e ulaşan oyuncu kazanır. Bitiş yapan oyuncu puan düşer (iyi), ceza alanlar puan kazanır (kötü)."
+    },
+    {
       "id": "normal_bitis",
       "keywords": ["normal", "normal bitiş", "normal bitti", "kaç puan", "2 puan", "nasıl biter"],
-      "answer": "Normal bitişte bitiren oyuncu diğer 3 rakibine 2'şer puan ceza yazar (rakiplerin puanı 2 artar).",
-      "penalty": 2
+      "answer": "Normal bitişte biten oyuncu -2 puan alır (puanı düşer), diğer 3 rakip +2 puan ceza alır (puanları artar).",
+      "winner_delta": -2,
+      "others_penalty": 2
     },
     {
       "id": "okey_ile_bitis",
       "keywords": ["okey ile", "okey atarak", "joker", "okeyle bitiş", "okey taşı", "4 puan bitiş"],
-      "answer": "Okey taşıyla bitişte bitiş taşı joker olur ve diğer rakipler 4'er puan ceza alır.",
-      "penalty": 4
+      "answer": "Okey taşıyla bitişte biten oyuncu -4 puan alır, diğer rakipler +4 puan ceza alır.",
+      "winner_delta": -4,
+      "others_penalty": 4
+    },
+    {
+      "id": "elden_bitis",
+      "keywords": ["elden", "elden bitiş", "elden bitmek", "hiç açmadan", "tek hamlede"],
+      "answer": "Elden bitişte oyuncu hiç per açmadan tek hamlede tüm taşlarını açar. Biten oyuncu -4 puan alır, diğer rakipler +4 puan ceza alır.",
+      "winner_delta": -4,
+      "others_penalty": 4
     },
     {
       "id": "ciftten_bitis",
       "keywords": ["çift", "çiftten", "çifte gitmek", "yedi çift", "7 çift", "çift gitme"],
-      "answer": "Çiftten bitişte 7 çift toplayarak bitirilir. Diğer rakipler 4'er puan ceza alır.",
-      "penalty": 4
+      "answer": "Çiftten bitişte en az 7 çift toplayarak bitirilir. Biten oyuncu -4 puan alır, diğer rakipler +4 puan ceza alır. Çiften gideceğini önceden duyurmak gerekir.",
+      "winner_delta": -4,
+      "others_penalty": 4
     },
     {
       "id": "okey_ile_ciftten",
       "keywords": ["okey ile çift", "okey çiftten", "8 puan", "çifte okey", "hem çift hem okey"],
-      "answer": "Hem çiftten bitip hem okey atılırsa rakipler 8'er puan ceza alır. En yüksek bitiş bonusudur.",
-      "penalty": 8
+      "answer": "Hem çiftten bitip hem okey atılırsa biten oyuncu -8 puan alır, rakipler +8 puan ceza alır. En yüksek bitiş bonusudur.",
+      "winner_delta": -8,
+      "others_penalty": 8
     },
     {
       "id": "gosterge",
       "keywords": ["gösterge", "gösterge göstermek", "gösterge puanı", "gösterge taşı", "1 puan"],
-      "answer": "El başlamadan önce gösterge taşını beyan eden oyuncu rakiplerine 1'er ek puan yükler. Bu bonus diğer bitiş cezasına eklenir.",
-      "penalty": 1
-    },
-    {
-      "id": "okey_iskat",
-      "keywords": ["okey ıskat", "okey yere", "okeyi attı", "yanlış okey", "okey düşürdü"],
-      "answer": "Bu durum oyun varyasyonuna göre değişebilir; genellikle okey taşını yanlışlıkla yere atan oyuncu 101 puan ceza alır, ancak başlamadan anlaşmak faydalı olabilir.",
-      "penalty": 101
+      "answer": "Dağıtımda gösterge taşını alan oyuncu bunu duyurursa, diğer 3 rakibe +1 ek puan ceza yazılır. Bu bonus, o eldeki diğer bitiş cezasına eklenir.",
+      "extra_penalty": 1
     },
     {
       "id": "taş_sayisi",
-      "keywords": ["kaç taş", "taş sayısı", "106 taş", "taş dağıtım"],
-      "answer": "Okey'de 106 taş bulunur. Her oyuncuya 14 taş dağıtılır; başlayan oyuncu 15. taşı çeker ve el bitiminde 15. taşı atarak bitirir."
+      "keywords": ["kaç taş", "taş sayısı", "106 taş", "taş dağıtım", "kaç taş verilir"],
+      "answer": "Okey'de 106 taş bulunur. Başlayan oyuncu 15, diğer 3 oyuncu 14'er taş alır. Başlayan elindeki 15. taşı atarak oyunu başlatır ve sonunda da 15. taşını atarak bitirir."
     },
     {
-      "id": "baslangic_puan",
-      "keywords": ["başlangıç", "başlangıç puanı", "kaçla başlanır", "20 puan"],
-      "answer": "Klasik Okey'de genellikle her oyuncu 20 puan ile başlar; her el kazanan dışındaki oyunculardan puan düşülür. Sıfırdan artan sistemle de oynanabilir."
+      "id": "ceza_sistemi",
+      "keywords": ["bittim yanlış", "ceza bittim", "taş fazla", "taş eksik", "hatalı bitmek"],
+      "answer": "Okey'de 'Bittim' deyip ıstakasını açtığında eli tamamlanmamışsa +2 puan ceza alır. Eksik veya fazla taşla oynamak ise eli geçersiz sayar.",
+      "penalty": 2
     }
   ]
 }

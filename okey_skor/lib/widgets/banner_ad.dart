@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/theme.dart';
 
 class BannerAdWidget extends StatelessWidget {
   const BannerAdWidget({super.key});

@@ -72,6 +72,21 @@ class GameSessionNotifier extends StateNotifier<GameSession?> {
     _save();
   }
 
+  void replaceRound(int index, RoundScore newRound) {
+    if (state == null || index < 0 || index >= state!.rounds.length) return;
+    final rounds = List<RoundScore>.from(state!.rounds);
+    rounds[index] = newRound;
+    final updatedPlayers = state!.players.map((p) {
+      int total = 0;
+      for (final r in rounds) {
+        total += r.deltas[p.id] ?? 0;
+      }
+      return p.copyWith(totalScore: total);
+    }).toList();
+    state = state!.copyWith(players: updatedPlayers, rounds: rounds);
+    _save();
+  }
+
   void undoLastRound() {
     if (state == null || state!.rounds.isEmpty) return;
     final last = state!.rounds.last;

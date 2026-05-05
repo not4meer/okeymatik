@@ -51,22 +51,21 @@ class ScoreScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // TOP: per-player penalty buttons
+          Expanded(
+            child: _RoundHistoryTable(
+              session: session,
+              hidden: hidden,
+              colors: _playerColors,
+              onEditRound: (i) => _editRound(context, ref, session, i),
+            ),
+          ),
+          const Divider(height: 1),
           _PenaltyRow(
-            players: session.players,
+            session: session,
             colors: _playerColors,
             onPenalty: (id, amt) => ref.read(gameSessionProvider.notifier).addPenalty(id, amt),
           ),
           const Divider(height: 1),
-          // MIDDLE: 2x2 player grid
-          Expanded(
-            child: _PlayerGrid(
-              session: session,
-              hidden: hidden,
-              colors: _playerColors,
-            ),
-          ),
-          // BOTTOM: controls
           _BottomBar(
             session: session,
             hidden: hidden,
@@ -96,6 +95,23 @@ class ScoreScreen extends ConsumerWidget {
       if (round != null && context.mounted) {
         ref.read(gameSessionProvider.notifier).addRound(round);
         InterstitialAd.show(context);
+      }
+    });
+  }
+
+  void _editRound(BuildContext context, WidgetRef ref, GameSession session, int index) {
+    final sheet = session.gameType == GameType.okey101
+        ? const Okey101RoundSheet()
+        : const ClassicRoundSheet();
+
+    showModalBottomSheet<RoundScore>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => sheet,
+    ).then((round) {
+      if (round != null && context.mounted) {
+        ref.read(gameSessionProvider.notifier).replaceRound(index, round);
       }
     });
   }
@@ -181,50 +197,67 @@ class ScoreScreen extends ConsumerWidget {
 // ── Penalty row ──────────────────────────────────────────
 
 class _PenaltyRow extends StatelessWidget {
-  final List<Player> players;
+  final GameSession session;
   final List<Color> colors;
   final void Function(String playerId, int amount) onPenalty;
 
-  const _PenaltyRow({required this.players, required this.colors, required this.onPenalty});
+  const _PenaltyRow({required this.session, required this.colors, required this.onPenalty});
 
   @override
   Widget build(BuildContext context) {
+    final isPaired = session.gameMode == GameMode.paired && session.pairs.length == 2;
+
+    Widget button(Player player, Color color) {
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: GestureDetector(
+            onTap: () => _showPenaltyDialog(context, player, color),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: color.withValues(alpha: 0.25)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_rounded, size: 14, color: color),
+                  const SizedBox(width: 3),
+                  Text(
+                    isPaired ? '${player.name} Ceza' : 'Ceza',
+                    style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final List<Widget> buttons;
+    if (isPaired) {
+      buttons = session.pairs.map((pair) {
+        final first = session.players[pair[0]];
+        String name = first.name;
+        if (name.endsWith(' 1') || name.endsWith(' 2')) {
+          name = name.substring(0, name.length - 2).trim();
+        }
+        final color = colors[pair[0] % colors.length];
+        return button(Player(id: first.id, name: name, totalScore: 0), color);
+      }).toList();
+    } else {
+      buttons = session.players.asMap().entries.map((e) {
+        return button(e.value, colors[e.key % colors.length]);
+      }).toList();
+    }
+
     return Container(
       color: AppColors.surface,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: players.asMap().entries.map((e) {
-          final color = colors[e.key % colors.length];
-          final player = e.value;
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: GestureDetector(
-                onTap: () => _showPenaltyDialog(context, player, color),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: color.withOpacity(0.25)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_rounded, size: 14, color: color),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Ceza',
-                        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+      child: Row(children: buttons),
     );
   }
 
@@ -263,130 +296,269 @@ class _PenaltyRow extends StatelessWidget {
   }
 }
 
-// ── Player grid (2x2) ────────────────────────────────────
+// ── Display column (player or team) ──────────────────────
 
-class _PlayerGrid extends StatelessWidget {
+class _DisplayColumn {
+  final String name;
+  final Color color;
+  final List<String> playerIds;
+
+  const _DisplayColumn({required this.name, required this.color, required this.playerIds});
+
+  int deltaFor(RoundScore round) =>
+      playerIds.fold(0, (sum, id) => sum + (round.deltas[id] ?? 0));
+
+  int totalFor(List<Player> players) => playerIds.fold(0, (sum, id) {
+        final p = players.firstWhere((pl) => pl.id == id,
+            orElse: () => const Player(id: '', name: '', totalScore: 0));
+        return sum + p.totalScore;
+      });
+}
+
+List<_DisplayColumn> _buildColumns(GameSession session, List<Color> colors) {
+  if (session.gameMode == GameMode.paired && session.pairs.length == 2) {
+    return session.pairs.asMap().entries.map((e) {
+      final pair = e.value;
+      String name = session.players[pair[0]].name;
+      // Strip " 1" / " 2" suffix added during setup
+      if (name.endsWith(' 1') || name.endsWith(' 2')) {
+        name = name.substring(0, name.length - 2).trim();
+      }
+      return _DisplayColumn(
+        name: name,
+        color: colors[pair[0] % colors.length],
+        playerIds: pair.map((i) => session.players[i].id).toList(),
+      );
+    }).toList();
+  }
+  return session.players.asMap().entries.map((e) => _DisplayColumn(
+        name: e.value.name,
+        color: colors[e.key % colors.length],
+        playerIds: [e.value.id],
+      )).toList();
+}
+
+// ── Round history table ───────────────────────────────────
+
+class _RoundHistoryTable extends StatelessWidget {
   final GameSession session;
   final bool hidden;
   final List<Color> colors;
+  final void Function(int index) onEditRound;
 
-  const _PlayerGrid({required this.session, required this.hidden, required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    final players = session.players;
-    final lastDeltas = session.rounds.isNotEmpty ? session.rounds.last.deltas : <String, int>{};
-
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(10),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-      ),
-      itemCount: players.length,
-      itemBuilder: (_, i) {
-        final p = players[i];
-        final color = colors[i % colors.length];
-        final last = lastDeltas[p.id];
-        return _PlayerCard(
-          player: p,
-          color: color,
-          lastDelta: last,
-          hidden: hidden,
-          gameType: session.gameType,
-        );
-      },
-    );
-  }
-}
-
-class _PlayerCard extends StatelessWidget {
-  final Player player;
-  final Color color;
-  final int? lastDelta;
-  final bool hidden;
-  final GameType gameType;
-
-  const _PlayerCard({
-    required this.player,
-    required this.color,
-    required this.lastDelta,
+  const _RoundHistoryTable({
+    required this.session,
     required this.hidden,
-    required this.gameType,
+    required this.colors,
+    required this.onEditRound,
   });
 
   @override
   Widget build(BuildContext context) {
-    final total = player.totalScore;
-    final totalColor = _totalColor(total);
+    final columns = _buildColumns(session, colors);
+    final rounds = session.rounds;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: total >= 100 && gameType == GameType.okey101
-              ? AppColors.penalty.withOpacity(0.4)
-              : color.withOpacity(0.2),
-          width: 1.5,
+    int elCounter = 0;
+    final elNos = rounds.map((r) {
+      if (r.label != 'Ceza') elCounter++;
+      return r.label != 'Ceza' ? elCounter : null;
+    }).toList();
+
+    return Column(
+      children: [
+        _TableHeader(columns: columns),
+        const Divider(height: 1, color: Colors.white10),
+        Expanded(
+          child: rounds.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Henüz el girilmedi',
+                    style: TextStyle(color: Colors.white38, fontSize: 14),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: rounds.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.white10),
+                  itemBuilder: (_, i) => _RoundRow(
+                    elNo: elNos[i],
+                    round: rounds[i],
+                    columns: columns,
+                    onEdit: () => onEditRound(i),
+                  ),
+                ),
         ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        const Divider(height: 1, color: Colors.white10),
+        _TotalRow(
+          columns: columns,
+          players: session.players,
+          hidden: hidden,
+          gameType: session.gameType,
+        ),
+      ],
+    );
+  }
+}
+
+class _TableHeader extends StatelessWidget {
+  final List<_DisplayColumn> columns;
+
+  const _TableHeader({required this.columns});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
         children: [
-          // Name
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              player.name,
-              style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700),
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+          const SizedBox(width: 58),
+          ...columns.map((c) => Expanded(
+                child: Text(
+                  c.name,
+                  style: TextStyle(
+                    color: c.color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              )),
+          const SizedBox(width: 36),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundRow extends StatelessWidget {
+  final int? elNo;
+  final RoundScore round;
+  final List<_DisplayColumn> columns;
+  final VoidCallback onEdit;
+
+  const _RoundRow({
+    required this.elNo,
+    required this.round,
+    required this.columns,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 58,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (elNo != null)
+                  Text(
+                    'El $elNo',
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                Text(
+                  round.label,
+                  style: const TextStyle(color: Colors.white38, fontSize: 10),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          // Last round delta
-          if (lastDelta != null) ...[
-            Builder(builder: (context) {
-              final d = lastDelta!;
-              return Text(
-                hidden || d == 0 ? '—' : d > 0 ? '+$d' : '$d',
-                style: TextStyle(
-                  color: hidden || d == 0
-                      ? Colors.white24
-                      : d < 0
-                          ? AppColors.siler
-                          : AppColors.penalty,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              );
-            }),
-            const SizedBox(height: 4),
-          ],
-          // Total score
-          Text(
-            hidden ? '***' : total.toString(),
-            style: TextStyle(
-              color: hidden ? Colors.white38 : totalColor,
-              fontSize: 38,
-              fontWeight: FontWeight.w800,
-              height: 1,
+          ...columns.map((c) {
+            final d = c.deltaFor(round);
+            final color = d < 0
+                ? AppColors.siler
+                : d > 0
+                    ? AppColors.penalty
+                    : Colors.white24;
+            return Expanded(
+              child: Text(
+                d == 0 ? '—' : d > 0 ? '+$d' : '$d',
+                style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+              ),
+            );
+          }),
+          SizedBox(
+            width: 36,
+            child: IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 15),
+              color: Colors.white24,
+              padding: EdgeInsets.zero,
+              onPressed: onEdit,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Color _totalColor(int total) {
-    if (gameType == GameType.okey101) {
-      if (total < 0) return AppColors.siler;
-      if (total >= 100) return AppColors.penalty;
-    }
-    return Colors.white;
+class _TotalRow extends StatelessWidget {
+  final List<_DisplayColumn> columns;
+  final List<Player> players;
+  final bool hidden;
+  final GameType gameType;
+
+  const _TotalRow({
+    required this.columns,
+    required this.players,
+    required this.hidden,
+    required this.gameType,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 58,
+            child: Text(
+              'Toplam',
+              style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+          ),
+          ...columns.map((c) {
+            final total = c.totalFor(players);
+            Color scoreColor;
+            if (hidden) {
+              scoreColor = Colors.white38;
+            } else if (gameType == GameType.okey101) {
+              scoreColor = total < 0
+                  ? AppColors.siler
+                  : total >= 100
+                      ? AppColors.penalty
+                      : Colors.white;
+            } else {
+              scoreColor = total < 0 ? AppColors.siler : Colors.white;
+            }
+            return Expanded(
+              child: Text(
+                hidden ? '***' : total.toString(),
+                style: TextStyle(
+                  color: scoreColor,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            );
+          }),
+          const SizedBox(width: 36),
+        ],
+      ),
+    );
   }
 }
 
@@ -508,9 +680,9 @@ class _SummaryDialog extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

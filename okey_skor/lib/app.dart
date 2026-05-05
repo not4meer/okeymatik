@@ -13,7 +13,7 @@ class OkeySkorApp extends ConsumerWidget {
     final session = ref.watch(gameSessionProvider);
 
     return MaterialApp(
-      title: 'Okey Skor',
+      title: 'Okeymatik',
       debugShowCheckedModeBanner: false,
       theme: buildDarkTheme(),
       home: session != null ? const ScoreScreen() : const HomeScreen(),

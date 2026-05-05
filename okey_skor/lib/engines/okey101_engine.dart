@@ -1,5 +1,4 @@
 import '../models/game_enums.dart';
-import '../models/game_session.dart';
 import '../models/player.dart';
 import '../models/round.dart';
 import 'scoring_engine.dart';
@@ -17,18 +16,12 @@ class Okey101Engine extends ScoringEngine {
     final playerData = input['playerData'] as Map<String, PlayerRoundData101>;
     final partnerId = input['partnerId'] as String?;
 
-    final isElden = finishType == Okey101FinishType.elden || finishType == Okey101FinishType.eldenOkey;
-    final usedOkey = finishType == Okey101FinishType.okeyAtarak || finishType == Okey101FinishType.eldenOkey;
-
     final deltas = <String, int>{};
 
     // --- Winner score ---
     int winnerDelta = _silerFor(finishType);
-    // Winner işlek ceza
     final winnerData = playerData[winnerId];
-    if (winnerData != null && winnerData.islikCeza) {
-      winnerDelta += 101;
-    }
+    if (winnerData != null && winnerData.islikCeza) winnerDelta += 101;
     deltas[winnerId] = winnerDelta;
 
     // --- Other players ---
@@ -36,34 +29,22 @@ class Okey101Engine extends ScoringEngine {
       if (p.id == winnerId) continue;
 
       final data = playerData[p.id] ?? PlayerRoundData101();
-
-      // Partner of winner in paired mode: normal tile penalty is wiped
       final isPartner = p.id == partnerId;
 
       int penalty;
 
-      if (isElden) {
-        // Elden bitme: nobody opened, fixed penalties
-        penalty = usedOkey ? 808 : 404;
-      } else if (isPartner) {
-        // Partner's tile penalty is zero in paired mode
+      if (isPartner) {
         penalty = 0;
       } else if (data.elAcmadi) {
-        penalty = 202;
+        penalty = _elAcmadiPenaltyFor(finishType);
       } else {
         int tiles = data.remainingTiles;
-        // Çift açan: remaining × 2
-        if (data.ciftActi) tiles *= 2;
-        // Okey atarak bitiş: others × 2
-        if (usedOkey) tiles *= 2;
-        // Elde okey taşı: +101 extra
-        if (data.hasOkeyInHand) tiles += 101;
-        penalty = tiles;
+        if (data.ciftActi) tiles *= 2; // çift açan: kendi 2 katı
+        penalty = tiles * _multiplierFor(finishType);
+        if (data.hasOkeyInHand) penalty += 101;
       }
 
-      // Individual işlek ceza (always applies, even for partner)
       if (data.islikCeza) penalty += 101;
-
       deltas[p.id] = penalty;
     }
 
@@ -79,21 +60,50 @@ class Okey101Engine extends ScoringEngine {
       case Okey101FinishType.normal:
         return -101;
       case Okey101FinishType.okeyAtarak:
-        return -202;
       case Okey101FinishType.elden:
+      case Okey101FinishType.ciftBitis:
         return -202;
       case Okey101FinishType.eldenOkey:
+      case Okey101FinishType.ciftOkeyBitis:
         return -404;
+    }
+  }
+
+  int _multiplierFor(Okey101FinishType type) {
+    switch (type) {
+      case Okey101FinishType.normal:
+        return 1;
+      case Okey101FinishType.okeyAtarak:
+      case Okey101FinishType.elden:
+      case Okey101FinishType.ciftBitis:
+        return 2;
+      case Okey101FinishType.eldenOkey:
+      case Okey101FinishType.ciftOkeyBitis:
+        return 4;
+    }
+  }
+
+  int _elAcmadiPenaltyFor(Okey101FinishType type) {
+    switch (type) {
+      case Okey101FinishType.normal:
+        return 202;
+      case Okey101FinishType.okeyAtarak:
+      case Okey101FinishType.elden:
+      case Okey101FinishType.ciftBitis:
+        return 404;
+      case Okey101FinishType.eldenOkey:
+      case Okey101FinishType.ciftOkeyBitis:
+        return 808;
     }
   }
 }
 
 class PlayerRoundData101 {
   final int remainingTiles;
-  final bool elAcmadi;   // didn't open hand
-  final bool ciftActi;   // opened with pairs → remaining ×2
-  final bool islikCeza;  // threw an işlek tile → +101
-  final bool hasOkeyInHand; // okey tile in hand → +101 extra
+  final bool elAcmadi;
+  final bool ciftActi;
+  final bool islikCeza;
+  final bool hasOkeyInHand;
 
   const PlayerRoundData101({
     this.remainingTiles = 0,

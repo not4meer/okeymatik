@@ -19,7 +19,7 @@ class ClassicOkeyEngine extends ScoringEngine {
 
     for (final p in players) {
       if (p.id == winnerId) {
-        deltas[p.id] = 0;
+        deltas[p.id] = -basePenalty;
       } else {
         deltas[p.id] = basePenalty + (gosterge ? 1 : 0);
       }
