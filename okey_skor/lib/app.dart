@@ -6,6 +6,7 @@ import 'providers/settings_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/score_screen.dart';
+import 'screens/splash_screen.dart';
 
 class OkeySkorApp extends ConsumerWidget {
   const OkeySkorApp({super.key});
@@ -15,13 +16,13 @@ class OkeySkorApp extends ConsumerWidget {
     final session = ref.watch(gameSessionProvider);
     final settings = ref.watch(settingsProvider);
 
-    Widget home;
+    final Widget afterSplash;
     if (settings.isFirstLaunch) {
-      home = const OnboardingScreen();
+      afterSplash = const OnboardingScreen();
     } else if (session != null) {
-      home = const ScoreScreen();
+      afterSplash = const ScoreScreen();
     } else {
-      home = const HomeScreen();
+      afterSplash = const HomeScreen();
     }
 
     return MaterialApp(
@@ -30,7 +31,7 @@ class OkeySkorApp extends ConsumerWidget {
       themeMode: settings.themeMode,
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
-      home: home,
+      home: SplashScreen(afterSplash: afterSplash),
     );
   }
 }

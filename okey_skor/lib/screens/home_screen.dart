@@ -105,14 +105,22 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _GameCard(
                 title: s.classicOkey,
-                icon: Icons.grid_view_rounded,
-                color: const Color(0xFF4CAF50),
+                subtitle: '4 oyuncu · tur bazlı',
+                iconWidget: const _TileIcon(
+                  labels: ['6', '7'],
+                  tileColors: [Color(0xFF111827), Color(0xFFDC2626)],
+                ),
+                color: AppColors.primary,
                 onTap: () => _navigate(context, GameType.classicOkey),
               ),
               const SizedBox(height: 14),
               _GameCard(
                 title: 'Okey 101',
-                icon: Icons.looks_one_rounded,
+                subtitle: 'Tekli & çiftli · 101 puana',
+                iconWidget: const _TileIcon(
+                  labels: ['1', '0', '1'],
+                  tileColors: [AppColors.primary, AppColors.primary, AppColors.primary],
+                ),
                 color: AppColors.primary,
                 onTap: () => _navigate(context, GameType.okey101),
               ),
@@ -244,13 +252,15 @@ class HomeScreen extends ConsumerWidget {
 
 class _GameCard extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final String subtitle;
+  final Widget iconWidget;
   final Color color;
   final VoidCallback onTap;
 
   const _GameCard({
     required this.title,
-    required this.icon,
+    required this.subtitle,
+    required this.iconWidget,
     required this.color,
     required this.onTap,
   });
@@ -259,40 +269,124 @@ class _GameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: context.appCard,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      color.withValues(alpha: 0.25),
+                      color.withValues(alpha: 0.10),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.30),
+                    width: 1,
+                  ),
                 ),
-                child: Icon(icon, color: color, size: 28),
+                child: Center(child: iconWidget),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: context.appTextMain,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: context.appTextMain,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.appSubtext,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded,
-                  color: context.appDim, size: 16),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.chevron_right_rounded, color: color, size: 18),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+// Okey taşı ikonları — beyaz arka plan üzerine renkli sayı
+class _TileIcon extends StatelessWidget {
+  final List<String> labels;
+  final List<Color> tileColors;
+
+  const _TileIcon({required this.labels, required this.tileColors});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = labels.length;
+    final tileW = count == 3 ? 13.0 : 17.0;
+    final tileH = count == 3 ? 20.0 : 26.0;
+    final fontSize = count == 3 ? 9.0 : 12.0;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < labels.length; i++) ...[
+          if (i > 0) const SizedBox(width: 2.5),
+          Container(
+            width: tileW,
+            height: tileH,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: tileColors[i], width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: tileColors[i].withValues(alpha: 0.30),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                labels[i],
+                style: TextStyle(
+                  color: tileColors[i],
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

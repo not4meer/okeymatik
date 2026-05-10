@@ -18,6 +18,7 @@ dependencies:
   firebase_database: ^11.3.5
   screenshot: ^3.0.0
   path_provider: ^2.1.0
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +30,12 @@ flutter:
   assets:
     - assets/rules/
     - assets/images/
+  fonts:
+    - family: Caveat
+      fonts:
+        - asset: assets/fonts/Caveat-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Caveat-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Caveat-Bold.ttf
+          weight: 700

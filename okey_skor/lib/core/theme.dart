@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
 // ── Dark palette ──────────────────────────────────────────
-const _primary = Color(0xFF9C89FF);
-const _bg = Color(0xFF1A1423);
-const _surface = Color(0xFF1E1F38);
-const _card = Color(0xFF231B32);
-const _textMain = Color(0xFFF3F1EB);
+const _primary = Color(0xFF4A90FF);
+const _bg = Color(0xFF080D18);
+const _surface = Color(0xFF0E1628);
+const _card = Color(0xFF152030);
+const _textMain = Color(0xFFF0F4FF);
 
 // ── Light palette ─────────────────────────────────────────
-const _lightBg = Color(0xFFF4F1FF);
-const _lightSurface = Color(0xFFEBE5FF);
+const _lightBg = Color(0xFFD8E8FF);
+const _lightSurface = Color(0xFFC4D8FF);
 const _lightCard = Color(0xFFFFFFFF);
-const _lightText = Color(0xFF1A1423);
+const _lightText = Color(0xFF0D1F3C);
 
 // ── BuildContext theme extensions ─────────────────────────
 
@@ -27,7 +27,7 @@ extension AppThemeX on BuildContext {
   Color get appHint => isDark ? Colors.white38 : Colors.black38;
   Color get appSubtext => isDark ? Colors.white54 : Colors.black54;
   Color get appDim => isDark ? Colors.white24 : Colors.black26;
-  Color get appMuted => isDark ? Colors.white12 : Colors.black12;
+  Color get appMuted => isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.18);
   Color get appWhisper =>
       isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06);
 }
@@ -109,7 +109,7 @@ ThemeData buildDarkTheme() {
       hintStyle: const TextStyle(color: Colors.white30),
     ),
     dividerTheme: const DividerThemeData(
-      color: Color(0xFF2D2040),
+      color: Color(0xFF0A1830),
       thickness: 1,
       space: 1,
     ),
@@ -207,17 +207,21 @@ ThemeData buildLightTheme() {
       fillColor: _lightCard,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide.none,
+        borderSide: const BorderSide(color: Color(0xFFCED6E8), width: 1),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFCED6E8), width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: const BorderSide(color: _primary, width: 1.5),
       ),
       labelStyle: const TextStyle(color: Colors.black45),
-      hintStyle: const TextStyle(color: Colors.black26),
+      hintStyle: const TextStyle(color: Colors.black38),
     ),
     dividerTheme: const DividerThemeData(
-      color: Color(0xFFDDD6F3),
+      color: Color(0xFFCDD8F0),
       thickness: 1,
       space: 1,
     ),
@@ -262,4 +266,5 @@ class AppColors {
   static const penalty = Color(0xFFFF5252);
   static const siler = Color(0xFF00E676);
   static const neutral = Color(0xFF9E9E9E);
+  static const gold = Color(0xFFF59E0B);
 }

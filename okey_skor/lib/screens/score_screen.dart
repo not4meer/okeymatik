@@ -782,32 +782,32 @@ class _TotalRow extends StatelessWidget {
               style: TextStyle(color: context.appSubtext, fontSize: 11, fontWeight: FontWeight.w700),
             ),
           ),
-          ...columns.map((c) {
-            final total = c.totalFor(players);
-            Color scoreColor;
-            if (hidden) {
-              scoreColor = context.appHint;
-            } else if (gameType == GameType.okey101) {
-              scoreColor = total < 0
-                  ? AppColors.siler
-                  : total >= 100
-                      ? AppColors.penalty
-                      : context.appTextMain;
-            } else {
-              scoreColor = total < 0 ? AppColors.siler : context.appTextMain;
-            }
-            return Expanded(
-              child: Text(
-                hidden ? '***' : total.toString(),
-                style: TextStyle(
-                  color: scoreColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
+          ...() {
+            final totals = columns.map((c) => c.totalFor(players)).toList();
+            final minTotal = totals.isEmpty ? 0 : totals.reduce((a, b) => a < b ? a : b);
+            return columns.map((c) {
+              final total = c.totalFor(players);
+              Color scoreColor;
+              if (hidden) {
+                scoreColor = context.appHint;
+              } else if (total == minTotal) {
+                scoreColor = const Color(0xFF2E7D32);
+              } else {
+                scoreColor = context.appTextMain;
+              }
+              return Expanded(
+                child: Text(
+                  hidden ? '***' : total.toString(),
+                  style: TextStyle(
+                    color: scoreColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            );
-          }),
+              );
+            });
+          }(),
           const SizedBox(width: 36),
         ],
       ),
@@ -848,37 +848,51 @@ class _BottomBar extends StatelessWidget {
 
     return Container(
       color: context.appSurface,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
-              Text(roundLabel, style: TextStyle(color: context.appHint, fontSize: 13)),
+              Text(roundLabel,
+                  style: TextStyle(color: context.appHint, fontSize: 13)),
               const Spacer(),
               if (onUndo != null) ...[
                 _IconBtn(
                   icon: Icons.undo_rounded,
+                  label: s.undoTitle,
                   onTap: onUndo!,
-                  tooltip: s.undoTitle,
                   color: AppColors.penalty,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
               ],
               _IconBtn(
-                icon: hidden ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                icon: hidden
+                    ? Icons.visibility_rounded
+                    : Icons.visibility_off_rounded,
+                label: hidden ? 'Göster' : 'Gizle',
                 onTap: onToggleHide,
-                tooltip: hidden ? 'Skorları Göster' : 'Skorları Gizle',
               ),
-              const SizedBox(width: 4),
-              _IconBtn(icon: Icons.calculate_outlined, onTap: onCalc, tooltip: 'Taş Hesaplayıcı'),
-              const SizedBox(width: 4),
-              _IconBtn(icon: Icons.casino_outlined, onTap: onDice, tooltip: s.diceTitle),
-              const SizedBox(width: 4),
-              _IconBtn(icon: Icons.chat_bubble_outline_rounded, onTap: onChat, tooltip: s.chatTitle),
+              const SizedBox(width: 6),
+              if (session.gameType == GameType.okey101) ...[
+                _IconBtn(
+                    icon: Icons.calculate_rounded,
+                    label: 'Hesap',
+                    onTap: onCalc),
+                const SizedBox(width: 6),
+              ],
+              _IconBtn(
+                  icon: Icons.casino_rounded,
+                  label: 'Zar',
+                  onTap: onDice),
+              const SizedBox(width: 6),
+              _IconBtn(
+                  icon: Icons.gavel_rounded,
+                  label: 'Hakem',
+                  onTap: onChat),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           ElevatedButton.icon(
             onPressed: onEnterScore,
             icon: const Icon(Icons.add_rounded, size: 20),
@@ -892,27 +906,38 @@ class _BottomBar extends StatelessWidget {
 
 class _IconBtn extends StatelessWidget {
   final IconData icon;
+  final String label;
   final VoidCallback onTap;
-  final String tooltip;
   final Color? color;
 
-  const _IconBtn({required this.icon, required this.onTap, required this.tooltip, this.color});
+  const _IconBtn(
+      {required this.icon,
+      required this.label,
+      required this.onTap,
+      this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: context.appCard,
-            borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 38,
+            decoration: BoxDecoration(
+              color: context.appCard,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color ?? AppColors.primary, size: 22),
           ),
-          child: Icon(icon, color: color ?? AppColors.primary, size: 20),
-        ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(color: context.appHint, fontSize: 9.5),
+          ),
+        ],
       ),
     );
   }
@@ -991,6 +1016,7 @@ class _SummaryDialogState extends State<_SummaryDialog> {
         _ResultCard(session: widget.session),
         pixelRatio: 2.0,
         context: context,
+        constraints: const BoxConstraints(maxWidth: 360),
       );
       final XFile xFile;
       if (kIsWeb) {
@@ -1128,8 +1154,6 @@ class _ResultCard extends StatelessWidget {
   static const _headerBg = Color(0xFFEDE4D0);
   static const _stripeBg = Color(0xFFF0EAD8);
 
-  static const _circles = ['①', '②', '③', '④'];
-
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -1163,23 +1187,30 @@ class _ResultCard extends StatelessWidget {
     final gameLabel =
         session.gameType == GameType.okey101 ? 'Okey 101' : 'Klasik Okey';
 
-    return Container(
+    return SizedBox(
       width: 360,
-      color: _bg,
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Container(
-          decoration:
-              BoxDecoration(border: Border.all(color: _border, width: 1.5)),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      height: 640,
+      child: Container(
+        color: _bg,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: 340,
+              child: Container(
+                decoration:
+                    BoxDecoration(border: Border.all(color: _border, width: 1.5)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
               // ── Header ──
               Container(
                 color: _headerBg,
                 padding:
-                    const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
                 child: Column(children: [
                   const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Icon(Icons.casino_rounded, color: _inkMid, size: 14),
@@ -1191,16 +1222,16 @@ class _ResultCard extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                             letterSpacing: 3.5)),
                   ]),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 5),
                   Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Tarih: $dateStr',
-                            style: const TextStyle(
-                                color: _inkMid, fontSize: 11)),
+                            style: TextStyle(fontFamily: 'Caveat',
+                                color: _inkMid, fontSize: 13)),
                         Text('Saat: $timeStr',
-                            style: const TextStyle(
-                                color: _inkMid, fontSize: 11)),
+                            style: TextStyle(fontFamily: 'Caveat',
+                                color: _inkMid, fontSize: 13)),
                       ]),
                 ]),
               ),
@@ -1208,12 +1239,12 @@ class _ResultCard extends StatelessWidget {
 
               // ── Game type ──
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 7),
                 child: Text('— $gameLabel —',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(fontFamily: 'Caveat',
                         color: _ink,
-                        fontSize: 20,
+                        fontSize: 26,
                         fontWeight: FontWeight.w700,
                         fontStyle: FontStyle.italic,
                         letterSpacing: 0.5)),
@@ -1223,42 +1254,40 @@ class _ResultCard extends StatelessWidget {
               // ── Player summary ──
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 child: Column(children: [
-                  const Row(children: [
+                  Row(children: [
                     Expanded(
                         child: Text('OYUNCULAR / TAKIMLAR',
-                            style: TextStyle(
+                            style: TextStyle(fontFamily: 'Caveat',
                                 color: _inkMid,
-                                fontSize: 9,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 1.2))),
                     Text('TOPLAM',
-                        style: TextStyle(
+                        style: TextStyle(fontFamily: 'Caveat',
                             color: _inkMid,
-                            fontSize: 9,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2)),
                   ]),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   ...sorted.asMap().entries.map((e) {
                     final rank = e.key + 1;
                     final col = e.value;
                     final total = col.totalFor(session.players);
                     final isWinner = col.name == winner.name;
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Row(children: [
-                        Text(
-                            rank <= 4 ? '${_circles[rank - 1]} ' : '$rank. ',
-                            style: const TextStyle(
-                                color: _inkMid, fontSize: 13)),
+                        _RankCircle(rank: rank),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Row(children: [
                             Text(col.name,
-                                style: TextStyle(
+                                style: TextStyle(fontFamily: 'Caveat',
                                     color: isWinner ? _ink : _inkMid,
-                                    fontSize: 13,
+                                    fontSize: 15,
                                     fontWeight: isWinner
                                         ? FontWeight.w700
                                         : FontWeight.w400)),
@@ -1273,9 +1302,9 @@ class _ResultCard extends StatelessWidget {
                           ]),
                         ),
                         Text(total >= 0 ? '+$total' : '$total',
-                            style: TextStyle(
+                            style: TextStyle(fontFamily: 'Caveat',
                                 color: total < 0 ? _red : _green,
-                                fontSize: 14,
+                                fontSize: 17,
                                 fontWeight: FontWeight.w700)),
                       ]),
                     );
@@ -1348,8 +1377,8 @@ class _ResultCard extends StatelessWidget {
 
               // ── Winner ──
               Container(
-                margin: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                margin: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
                   border: Border.all(color: _border, width: 1.2),
                 ),
@@ -1361,36 +1390,39 @@ class _ResultCard extends StatelessWidget {
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 2)),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     const Text('👑 ', style: TextStyle(fontSize: 18)),
                     Text(winner.name,
-                        style: const TextStyle(
+                        style: TextStyle(fontFamily: 'Caveat',
                             color: _ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
                             fontStyle: FontStyle.italic)),
                   ]),
                 ]),
               ),
 
               // ── Footer ──
-              const Padding(
-                padding: EdgeInsets.fromLTRB(0, 10, 0, 10),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 6, 0, 6),
                 child: Column(children: [
-                  Divider(color: _inkFaint, height: 1),
-                  SizedBox(height: 8),
+                  const Divider(color: _inkFaint, height: 1),
+                  const SizedBox(height: 5),
                   Text(
                     'Okeymatik  ·  Masa çevresinde skor & kural asistanı',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: TextStyle(fontFamily: 'Caveat',
                         color: _inkFaint,
-                        fontSize: 9,
+                        fontSize: 12,
                         letterSpacing: 0.5),
                   ),
-                ]),
+                  ]),
+                ),
+                  ],
+                ),
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1417,14 +1449,12 @@ class _ResultCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       child: Row(children: [
         SizedBox(
-          width: 40,
+          width: 44,
           child: Text(label,
-              style: TextStyle(
-                  color: isHeader ? _inkMid : _ink,
-                  fontSize: isHeader ? 9 : 12,
-                  fontWeight: isHeader || isBold
-                      ? FontWeight.w700
-                      : FontWeight.w500,
+              style: TextStyle(fontFamily: 'Caveat',
+                  color: isHeader || isBold ? _inkMid : _ink,
+                  fontSize: isHeader ? 13 : 14,
+                  fontWeight: isHeader || isBold ? FontWeight.w700 : FontWeight.w500,
                   letterSpacing: isHeader ? 0.8 : 0)),
         ),
         ...cells.asMap().entries.map((e) {
@@ -1443,12 +1473,10 @@ class _ResultCard extends StatelessWidget {
           return Expanded(
             child: Text(val,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: TextStyle(fontFamily: 'Caveat',
                     color: textColor,
-                    fontSize: isHeader ? 9 : 12,
-                    fontWeight: isHeader || isBold
-                        ? FontWeight.w700
-                        : FontWeight.w500)),
+                    fontSize: isHeader ? 13 : 14,
+                    fontWeight: isHeader || isBold ? FontWeight.w700 : FontWeight.w500)),
           );
         }),
       ]),
@@ -1563,6 +1591,29 @@ class _LiveHostSheet extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RankCircle extends StatelessWidget {
+  final int rank;
+  const _RankCircle({required this.rank});
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFF6B5840);
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: 1),
+      ),
+      child: Center(
+        child: Text('$rank',
+            style: TextStyle(fontFamily: 'Caveat',
+                color: color, fontSize: 12, fontWeight: FontWeight.w700)),
       ),
     );
   }

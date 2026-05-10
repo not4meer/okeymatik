@@ -15,14 +15,14 @@ void main() async {
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     await Firebase.initializeApp();
   }
-  await WakelockPlus.enable();
+  try { await WakelockPlus.enable(); } catch (_) {}
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF1A1423),
+      systemNavigationBarColor: Color(0xFF080D18),
     ),
   );
 
