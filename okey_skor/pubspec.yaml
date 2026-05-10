@@ -12,6 +12,12 @@ dependencies:
   shared_preferences: ^2.2.3
   wakelock_plus: ^1.2.8
   http: ^1.2.0
+  share_plus: ^10.1.2
+  url_launcher: ^6.3.1
+  firebase_core: ^3.13.1
+  firebase_database: ^11.3.5
+  screenshot: ^3.0.0
+  path_provider: ^2.1.0
 
 dev_dependencies:
   flutter_test:

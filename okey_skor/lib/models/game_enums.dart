@@ -7,6 +7,7 @@ enum ClassicFinishType {
   okeyIle,          // winner -4, others +4
   elden,            // winner -4, others +4
   ciftten,          // winner -4, others +4
+  eldenOkey,        // winner -6, others +6
   okeyIleCiftten,   // winner -8, others +8
 }
 
@@ -30,6 +31,8 @@ extension ClassicFinishTypeLabel on ClassicFinishType {
         return 'Elden (-4/+4)';
       case ClassicFinishType.ciftten:
         return 'Çiftten (-4/+4)';
+      case ClassicFinishType.eldenOkey:
+        return 'Elden+Okey (-6/+6)';
       case ClassicFinishType.okeyIleCiftten:
         return 'Okey+Çift (-8/+8)';
     }
@@ -45,6 +48,8 @@ extension ClassicFinishTypeLabel on ClassicFinishType {
         return 4;
       case ClassicFinishType.ciftten:
         return 4;
+      case ClassicFinishType.eldenOkey:
+        return 6;
       case ClassicFinishType.okeyIleCiftten:
         return 8;
     }

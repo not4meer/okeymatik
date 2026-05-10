@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/strings.dart';
 import '../core/theme.dart';
 import '../models/game_enums.dart';
 import '../providers/chat_provider.dart';
 import '../providers/game_provider.dart';
+import '../providers/settings_provider.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -27,21 +29,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatProvider);
+    final s = ref.watch(stringsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.chat_bubble_rounded, color: AppColors.primary, size: 18),
-            SizedBox(width: 8),
-            Text('Kural Asistani'),
+            const Icon(Icons.chat_bubble_rounded, color: AppColors.primary, size: 18),
+            const SizedBox(width: 8),
+            Text(s.chatTitle),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Sohbeti temizle',
+            tooltip: s.clearChat,
             onPressed: () => ref.read(chatProvider.notifier).clear(),
           ),
         ],
@@ -57,12 +60,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ),
           _QuickQuestions(
+            s: s,
             onTap: _send,
             gameType: ref.watch(gameSessionProvider)?.gameType,
           ),
           _InputBar(
             controller: _controller,
             sending: _sending,
+            hint: s.chatHint,
             onSend: () => _send(_controller.text),
           ),
         ],
@@ -106,7 +111,9 @@ class _MessageBubble extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isUser ? AppColors.primary.withOpacity(0.2) : AppColors.card,
+          color: isUser
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : context.appCard,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(14),
             topRight: const Radius.circular(14),
@@ -114,13 +121,13 @@ class _MessageBubble extends StatelessWidget {
             bottomRight: Radius.circular(isUser ? 4 : 14),
           ),
           border: isUser
-              ? Border.all(color: AppColors.primary.withOpacity(0.3))
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
               : null,
         ),
         child: Text(
           msg.text,
           style: TextStyle(
-            color: isUser ? AppColors.primary : Colors.white,
+            color: isUser ? AppColors.primary : context.appTextMain,
             fontSize: 14,
             height: 1.45,
           ),
@@ -131,46 +138,21 @@ class _MessageBubble extends StatelessWidget {
 }
 
 class _QuickQuestions extends StatelessWidget {
+  final AppStrings s;
   final void Function(String) onTap;
   final GameType? gameType;
-  const _QuickQuestions({required this.onTap, this.gameType});
 
-  static const _okey101Questions = [
-    '101 siler kac puan dusuruyor?',
-    'El acmayan kac ceza alir?',
-    'Okey atarak bitis ne olur?',
-    'Islek tas cezasi nedir?',
-    'Elden bitis kac ceza?',
-    'Esli modda partner ceza siliyor mu?',
-  ];
+  const _QuickQuestions({required this.s, required this.onTap, this.gameType});
 
-  static const _classicQuestions = [
-    'Normal bitis kac puan?',
-    'Okey ile bitis kac puan?',
-    'Ciftten bitis kac puan?',
-    'Gosterge nedir?',
-    'Okey ve ciftten kac puan?',
-    'Okey ıskat nedir?',
-  ];
-
-  static const _mixedQuestions = [
-    'Normal bitis kac puan?',
-    '101 siler kac duser?',
-    'El acmayan kac ceza alir?',
-    'Okey ile bitince ne olur?',
-    'Ciftten bitis kac puan?',
-    'Islek tas cezasi nedir?',
-  ];
-
-  List<String> get _questions {
-    if (gameType == GameType.okey101) return _okey101Questions;
-    if (gameType == GameType.classicOkey) return _classicQuestions;
-    return _mixedQuestions;
+  List<String> _questions(AppStrings s) {
+    if (gameType == GameType.okey101) return s.okey101Questions;
+    if (gameType == GameType.classicOkey) return s.classicOkeyQuestions;
+    return s.mixedQuestions;
   }
 
   @override
   Widget build(BuildContext context) {
-    final questions = _questions;
+    final questions = _questions(s);
     return SizedBox(
       height: 40,
       child: ListView.separated(
@@ -183,14 +165,14 @@ class _QuickQuestions extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: context.appCard,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: context.appMuted),
             ),
             child: Center(
               child: Text(
                 questions[i],
-                style: const TextStyle(color: Colors.white60, fontSize: 12),
+                style: TextStyle(color: context.appSubtext, fontSize: 12),
               ),
             ),
           ),
@@ -203,18 +185,20 @@ class _QuickQuestions extends StatelessWidget {
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
   final bool sending;
+  final String hint;
   final VoidCallback onSend;
 
   const _InputBar({
     required this.controller,
     required this.sending,
+    required this.hint,
     required this.onSend,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surface,
+      color: context.appSurface,
       padding: EdgeInsets.only(
         left: 12,
         right: 12,
@@ -226,13 +210,16 @@ class _InputBar extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'Kural sorun...',
-                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              maxLength: 300,
+              decoration: InputDecoration(
+                hintText: hint,
+                counterText: '',
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               ),
               onSubmitted: (_) => onSend(),
               textInputAction: TextInputAction.send,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: context.appTextMain, fontSize: 14),
             ),
           ),
           const SizedBox(width: 8),
@@ -241,17 +228,17 @@ class _InputBar extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: sending ? Colors.white12 : AppColors.primary,
+              color: sending ? context.appMuted : AppColors.primary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
               icon: sending
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white54,
+                        color: context.appSubtext,
                       ),
                     )
                   : const Icon(Icons.send_rounded, size: 20, color: Colors.black),

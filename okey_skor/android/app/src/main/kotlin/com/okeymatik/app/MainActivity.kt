@@ -1,4 +1,4 @@
-package com.okeyapp.okey_skor_temp
+package com.okeymatik.app
 
 import io.flutter.embedding.android.FlutterActivity
 

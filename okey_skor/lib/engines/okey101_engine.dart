@@ -28,7 +28,7 @@ class Okey101Engine extends ScoringEngine {
     for (final p in players) {
       if (p.id == winnerId) continue;
 
-      final data = playerData[p.id] ?? PlayerRoundData101();
+      final data = playerData[p.id] ?? const PlayerRoundData101();
       final isPartner = p.id == partnerId;
 
       int penalty;

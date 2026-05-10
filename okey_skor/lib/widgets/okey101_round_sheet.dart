@@ -7,6 +7,7 @@ import '../models/game_session.dart';
 import '../models/player.dart';
 import '../models/round.dart';
 import '../providers/game_provider.dart';
+import '../providers/settings_provider.dart';
 import 'sheet_widgets.dart';
 
 class Okey101RoundSheet extends ConsumerStatefulWidget {
@@ -18,7 +19,6 @@ class Okey101RoundSheet extends ConsumerStatefulWidget {
 
 class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
   String? _activeId;
-  Okey101FinishType _finishType = Okey101FinishType.normal;
   final Map<String, TextEditingController> _ctrls = {};
   final Map<String, FocusNode> _nodes = {};
 
@@ -31,8 +31,12 @@ class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
 
   @override
   void dispose() {
-    for (final c in _ctrls.values) c.dispose();
-    for (final n in _nodes.values) n.dispose();
+    for (final c in _ctrls.values) {
+      c.dispose();
+    }
+    for (final n in _nodes.values) {
+      n.dispose();
+    }
     super.dispose();
   }
 
@@ -60,9 +64,7 @@ class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
     if (isPaired) {
       for (final pair in session.pairs) {
         final score = _scoreFor(session.players[pair[0]].id) ?? 0;
-        for (final i in pair) {
-          deltas[session.players[i].id] = score;
-        }
+        deltas[session.players[pair[0]].id] = score;
       }
     } else {
       for (final p in session.players) {
@@ -74,7 +76,7 @@ class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
       final minEntry = deltas.entries.reduce((a, b) => a.value < b.value ? a : b);
       if (minEntry.value < 0) winnerId = minEntry.key;
     }
-    return RoundScore(deltas: deltas, winnerId: winnerId, label: _finishType.label);
+    return RoundScore(deltas: deltas, winnerId: winnerId, label: '');
   }
 
   bool get _canSave => _ctrls.values.any((c) => c.text.trim().isNotEmpty);
@@ -84,11 +86,11 @@ class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(gameSessionProvider)!;
+    final s = ref.watch(stringsProvider);
     _init(session.players);
 
     final isPaired = session.gameMode == GameMode.paired && session.pairs.length == 2;
 
-    // Build display tiles (2 in paired mode, 4 in solo)
     final List<({String id, String name, Color color})> tiles;
     if (isPaired) {
       tiles = [
@@ -123,225 +125,213 @@ class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
       initialChildSize: 0.65,
       maxChildSize: 0.95,
       minChildSize: 0.4,
-      builder: (_, __) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SheetHandle(),
-                      SizedBox(height: 14),
-                      Text(
-                        'El Sonucu — Okey 101',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Finish type chips
-                SizedBox(
-                  height: 38,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: Okey101FinishType.values
-                        .map((t) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: SheetTypeChip(
-                                label: t.label,
-                                selected: _finishType == t,
-                                onTap: () => setState(() => _finishType = t),
-                              ),
-                            ))
-                        .toList(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Player / team tiles
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Row(
-                    children: tiles.map((tile) {
-                      final score = _scoreFor(tile.id);
-                      final isActive = tile.id == activeId;
-                      return Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => _activeId = tile.id);
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                _nodes[tile.id]?.requestFocus();
-                              });
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 14, horizontal: 6),
-                              decoration: BoxDecoration(
-                                color: isActive
-                                    ? tile.color.withValues(alpha: 0.15)
-                                    : AppColors.card,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isActive ? tile.color : Colors.white12,
-                                  width: isActive ? 2 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    tile.name,
-                                    style: TextStyle(
-                                      color: isActive ? tile.color : Colors.white54,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    score == null
-                                        ? '—'
-                                        : score < 0
-                                            ? '$score'
-                                            : '+$score',
-                                    style: TextStyle(
-                                      color: score == null
-                                          ? Colors.white24
-                                          : score < 0
-                                              ? AppColors.siler
-                                              : AppColors.penalty,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Score input + quick buttons (shown when a tile is active)
-                if (activeTile != null) ...[
+      builder: (_, scrollCtrl) => Container(
+        decoration: BoxDecoration(
+          color: context.appSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            controller: scrollCtrl,
+            physics: const ClampingScrollPhysics(),
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextField(
-                          controller: _ctrls[activeTile.id],
-                          focusNode: _nodes[activeTile.id],
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
-                          ],
-                          textAlign: TextAlign.center,
+                        const SheetHandle(),
+                        const SizedBox(height: 14),
+                        Text(
+                          s.roundResultOkey101,
                           style: TextStyle(
-                            color: activeTile.color,
-                            fontSize: 40,
-                            fontWeight: FontWeight.w800,
+                            color: context.appTextMain,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
-                          decoration: InputDecoration(
-                            hintText: '0',
-                            hintStyle: const TextStyle(
-                                color: Colors.white24, fontSize: 40),
-                            filled: true,
-                            fillColor: AppColors.card,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  BorderSide(color: activeTile.color, width: 2),
-                            ),
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [-101, -202, -404].map((s) {
-                            final current = _scoreFor(activeTile.id);
-                            final sel = current == s;
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () => _setQuick(activeTile.id, s),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 100),
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 4),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 11),
-                                  decoration: BoxDecoration(
-                                    color: sel
-                                        ? AppColors.siler.withValues(alpha: 0.2)
-                                        : AppColors.card,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: sel
-                                          ? AppColors.siler
-                                          : Colors.white12,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '$s',
-                                    style: TextStyle(
-                                      color: sel
-                                          ? AppColors.siler
-                                          : Colors.white38,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                ],
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                  child: ElevatedButton(
-                    onPressed: _canSave ? _submit : null,
-                    child: const Text('Kaydet'),
+                  // Player / team tiles
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Row(
+                      children: tiles.map((tile) {
+                        final score = _scoreFor(tile.id);
+                        final isActive = tile.id == activeId;
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _activeId = tile.id);
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  _nodes[tile.id]?.requestFocus();
+                                });
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 14, horizontal: 6),
+                                decoration: BoxDecoration(
+                                  color: isActive
+                                      ? tile.color.withValues(alpha: 0.15)
+                                      : context.appCard,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color:
+                                        isActive ? tile.color : context.appMuted,
+                                    width: isActive ? 2 : 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      tile.name,
+                                      style: TextStyle(
+                                        color: isActive
+                                            ? tile.color
+                                            : context.appSubtext,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      score == null
+                                          ? '—'
+                                          : score < 0
+                                              ? '$score'
+                                              : '+$score',
+                                      style: TextStyle(
+                                        color: score == null
+                                            ? context.appDim
+                                            : score < 0
+                                                ? AppColors.siler
+                                                : AppColors.penalty,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 16),
+
+                  // Score input + quick buttons
+                  if (activeTile != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _ctrls[activeTile.id],
+                            focusNode: _nodes[activeTile.id],
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
+                            ],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: activeTile.color,
+                              fontSize: 40,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '0',
+                              hintStyle:
+                                  TextStyle(color: context.appDim, fontSize: 40),
+                              filled: true,
+                              fillColor: context.appCard,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: activeTile.color, width: 2),
+                              ),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [-101, -202, -404, -808].map((v) {
+                              final current = _scoreFor(activeTile.id);
+                              final sel = current == v;
+                              return Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _setQuick(activeTile.id, v),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 100),
+                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 11),
+                                    decoration: BoxDecoration(
+                                      color: sel
+                                          ? AppColors.siler.withValues(alpha: 0.2)
+                                          : context.appCard,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: sel
+                                            ? AppColors.siler
+                                            : context.appMuted,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '$v',
+                                      style: TextStyle(
+                                        color: sel
+                                            ? AppColors.siler
+                                            : context.appHint,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    child: ElevatedButton(
+                      onPressed: _canSave ? _submit : null,
+                      child: Text(s.save),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),

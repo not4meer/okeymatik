@@ -1,16 +1,18 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
+import '../providers/settings_provider.dart';
 import 'sheet_widgets.dart';
 
-class DiceSheet extends StatefulWidget {
+class DiceSheet extends ConsumerStatefulWidget {
   const DiceSheet({super.key});
 
   @override
-  State<DiceSheet> createState() => _DiceSheetState();
+  ConsumerState<DiceSheet> createState() => _DiceSheetState();
 }
 
-class _DiceSheetState extends State<DiceSheet> {
+class _DiceSheetState extends ConsumerState<DiceSheet> {
   int _value = 1;
   bool _rolling = false;
   final _rng = Random();
@@ -28,84 +30,84 @@ class _DiceSheetState extends State<DiceSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: context.appSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
         left: 24,
         right: 24,
         top: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 32,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SheetHandle(),
-          const SizedBox(height: 16),
-          const Text(
-            'Zar At',
-            style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+          const SizedBox(height: 12),
+          Text(
+            s.diceTitle,
+            style: TextStyle(
+                color: context.appTextMain, fontSize: 17, fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
           GestureDetector(
             onTap: _roll,
             child: AnimatedScale(
               scale: _rolling ? 0.92 : 1.0,
               duration: const Duration(milliseconds: 80),
               child: Container(
-                width: 140,
-                height: 140,
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(28),
+                  color: context.appCard,
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: _rolling ? AppColors.primary.withOpacity(0.6) : Colors.white12,
+                    color: _rolling
+                        ? AppColors.primary.withValues(alpha: 0.6)
+                        : context.appMuted,
                     width: 2,
                   ),
                   boxShadow: _rolling
-                      ? [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 20, spreadRadius: 2)]
+                      ? [
+                          BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              spreadRadius: 2)
+                        ]
                       : [],
                 ),
                 child: Center(
-                  child: _DiceFace(value: _value, rolling: _rolling),
+                  child: Text(
+                    _emoji(_value),
+                    style: TextStyle(
+                      fontSize: 60,
+                      color: _rolling ? AppColors.primary : context.appTextMain,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Text(
-            _rolling ? 'Atılıyor...' : 'Zara dokunarak at',
+            _rolling ? s.rolling : s.tapToRoll,
             style: TextStyle(
-              color: _rolling ? AppColors.primary : Colors.white38,
+              color: _rolling ? AppColors.primary : context.appHint,
               fontSize: 13,
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: _rolling ? null : _roll,
             icon: const Icon(Icons.casino_rounded, size: 20),
-            label: const Text('Tekrar At'),
+            label: Text(s.rollAgain),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DiceFace extends StatelessWidget {
-  final int value;
-  final bool rolling;
-
-  const _DiceFace({required this.value, required this.rolling});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = rolling ? AppColors.primary : Colors.white;
-    return Text(
-      _emoji(value),
-      style: TextStyle(fontSize: 72, color: color),
     );
   }
 

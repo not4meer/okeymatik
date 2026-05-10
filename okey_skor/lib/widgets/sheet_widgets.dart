@@ -1,4 +1,3 @@
-// Shared widgets used by both Classic and Okey101 round entry sheets
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../models/round.dart';
@@ -10,8 +9,8 @@ class SheetSectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white38,
+        style: TextStyle(
+          color: context.appHint,
           fontSize: 11,
           letterSpacing: 1.1,
           fontWeight: FontWeight.w600,
@@ -52,18 +51,20 @@ class SheetPlayerGrid extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: sel ? color.withOpacity(0.2) : AppColors.card,
+                color: sel ? color.withValues(alpha: 0.2) : context.appCard,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: sel ? color : Colors.transparent, width: 1.5),
+                border: Border.all(
+                    color: sel ? color : Colors.transparent, width: 1.5),
               ),
               child: Column(
                 children: [
-                  Icon(Icons.person_rounded, color: sel ? color : Colors.white38, size: 22),
+                  Icon(Icons.person_rounded,
+                      color: sel ? color : context.appHint, size: 22),
                   const SizedBox(height: 4),
                   Text(
                     p.name as String,
                     style: TextStyle(
-                      color: sel ? color : Colors.white54,
+                      color: sel ? color : context.appSubtext,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -100,17 +101,19 @@ class SheetTypeChip extends StatelessWidget {
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withOpacity(0.2) : AppColors.card,
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : context.appCard,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppColors.primary : Colors.white12,
+            color: selected ? AppColors.primary : context.appMuted,
             width: 1.5,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? AppColors.primary : Colors.white54,
+            color: selected ? AppColors.primary : context.appSubtext,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -141,7 +144,8 @@ class SheetCheckRow extends StatelessWidget {
           Checkbox(value: value, onChanged: (v) => onChanged(v ?? false)),
           const SizedBox(width: 4),
           Expanded(
-            child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            child: Text(label,
+                style: TextStyle(color: context.appSubtext, fontSize: 13)),
           ),
         ],
       ),
@@ -152,23 +156,29 @@ class SheetCheckRow extends StatelessWidget {
 class SheetPreviewBox extends StatelessWidget {
   final RoundScore round;
   final List players;
+  final String previewLabel;
 
-  const SheetPreviewBox({super.key, required this.round, required this.players});
+  const SheetPreviewBox({
+    super.key,
+    required this.round,
+    required this.players,
+    required this.previewLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: context.appCard,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Onizleme: ${round.label}',
+            '$previewLabel: ${round.label}',
             style: const TextStyle(
               color: AppColors.primary,
               fontSize: 11,
@@ -184,7 +194,7 @@ class SheetPreviewBox extends StatelessWidget {
                   children: [
                     Text(
                       p.name as String,
-                      style: const TextStyle(color: Colors.white38, fontSize: 10),
+                      style: TextStyle(color: context.appHint, fontSize: 10),
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                     ),
@@ -195,7 +205,7 @@ class SheetPreviewBox extends StatelessWidget {
                         color: delta < 0
                             ? AppColors.siler
                             : delta == 0
-                                ? Colors.white24
+                                ? context.appDim
                                 : AppColors.penalty,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -222,7 +232,7 @@ class SheetHandle extends StatelessWidget {
           width: 40,
           height: 4,
           decoration: BoxDecoration(
-            color: Colors.white24,
+            color: context.appMuted,
             borderRadius: BorderRadius.circular(2),
           ),
         ),

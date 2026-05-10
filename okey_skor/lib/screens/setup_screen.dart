@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import '../models/game_enums.dart';
 import '../providers/game_provider.dart';
+import '../providers/settings_provider.dart';
 import 'score_screen.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
@@ -22,19 +23,24 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
 
   @override
   void dispose() {
-    for (final c in _playerCtrls) { c.dispose(); }
-    for (final c in _teamCtrls) { c.dispose(); }
+    for (final c in _playerCtrls) {
+      c.dispose();
+    }
+    for (final c in _teamCtrls) {
+      c.dispose();
+    }
     _roundCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final is101 = widget.gameType == GameType.okey101;
     final isPaired = is101 && _mode == GameMode.paired;
 
     return Scaffold(
-      appBar: AppBar(title: Text(is101 ? 'Okey 101' : 'Klasik Okey')),
+      appBar: AppBar(title: Text(is101 ? 'Okey 101' : s.classicOkey)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -43,13 +49,13 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             children: [
               const SizedBox(height: 20),
               if (is101) ...[
-                const _Label('Oyun Modu'),
+                _Label(s.gameMode),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
                       child: _Chip(
-                        label: 'Tekli',
+                        label: s.soloMode,
                         selected: _mode == GameMode.solo,
                         onTap: () => setState(() => _mode = GameMode.solo),
                       ),
@@ -57,7 +63,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _Chip(
-                        label: 'Eşli (2v2)',
+                        label: s.pairedMode,
                         selected: _mode == GameMode.paired,
                         onTap: () => setState(() => _mode = GameMode.paired),
                       ),
@@ -66,26 +72,28 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 ),
                 const SizedBox(height: 24),
               ],
-              _Label(isPaired ? 'Takım İsimleri' : 'Oyuncu İsimleri'),
+              _Label(isPaired ? s.teamNamesLabel : s.playerNamesLabel),
               const SizedBox(height: 12),
               Expanded(
-                child: isPaired ? _teamInputs() : _playerInputs(),
+                child: isPaired ? _teamInputs(s) : _playerInputs(s),
               ),
               const SizedBox(height: 16),
-              const _Label('Tur Sayısı (isteğe bağlı)'),
+              _Label(s.totalRoundsLabel),
               const SizedBox(height: 8),
               TextField(
                 controller: _roundCtrl,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  hintText: 'Boş bırakılabilir',
-                  prefixIcon: Icon(Icons.loop_rounded, color: Colors.white38, size: 20),
+                decoration: InputDecoration(
+                  hintText: s.roundsHint,
+                  prefixIcon:
+                      Icon(Icons.loop_rounded, color: context.appHint, size: 20),
                 ),
-                style: const TextStyle(fontSize: 16, color: Colors.white),
+                style: TextStyle(fontSize: 16, color: context.appTextMain),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _start, child: const Text('Oyunu Başlat')),
+              ElevatedButton(
+                  onPressed: () => _start(s), child: Text(s.startGame)),
               const SizedBox(height: 12),
             ],
           ),
@@ -94,51 +102,56 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     );
   }
 
-  Widget _playerInputs() {
-    const colors = [Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFFFF9800), Color(0xFFE91E63)];
-    const hints = ['Oyuncu 1', 'Oyuncu 2', 'Oyuncu 3', 'Oyuncu 4'];
+  Widget _playerInputs(s) {
+    const colors = [
+      Color(0xFF4CAF50),
+      Color(0xFF2196F3),
+      Color(0xFFFF9800),
+      Color(0xFFE91E63)
+    ];
     return ListView.separated(
       itemCount: 4,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => TextField(
+      itemBuilder: (ctx, i) => TextField(
         controller: _playerCtrls[i],
         textCapitalization: TextCapitalization.words,
         keyboardType: TextInputType.name,
         decoration: InputDecoration(
-          hintText: hints[i],
+          hintText: s.playerHints[i],
           prefixIcon: Icon(Icons.person_outline, color: colors[i], size: 20),
         ),
-        style: const TextStyle(fontSize: 16, color: Colors.white),
+        style: TextStyle(fontSize: 16, color: ctx.appTextMain),
       ),
     );
   }
 
-  Widget _teamInputs() {
+  Widget _teamInputs(s) {
     const colors = [Color(0xFF4CAF50), Color(0xFF2196F3)];
-    const hints = ['Takım A', 'Takım B'];
     return ListView.separated(
       itemCount: 2,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => TextField(
+      itemBuilder: (ctx, i) => TextField(
         controller: _teamCtrls[i],
         textCapitalization: TextCapitalization.words,
         keyboardType: TextInputType.name,
         decoration: InputDecoration(
-          hintText: hints[i],
+          hintText: s.teamHints[i],
           prefixIcon: Icon(Icons.group_outlined, color: colors[i], size: 20),
         ),
-        style: const TextStyle(fontSize: 16, color: Colors.white),
+        style: TextStyle(fontSize: 16, color: ctx.appTextMain),
       ),
     );
   }
 
-  void _start() {
+  void _start(s) {
     final List<String> names;
     if (_mode == GameMode.paired) {
-      final a = _teamCtrls[0].text.trim().isEmpty ? 'Takım A' : _teamCtrls[0].text.trim();
-      final b = _teamCtrls[1].text.trim().isEmpty ? 'Takım B' : _teamCtrls[1].text.trim();
-      // players[0,2] = Team A, players[1,3] = Team B
-      // Suffix helps distinguish in winner picker
+      final a = _teamCtrls[0].text.trim().isEmpty
+          ? s.defaultTeamA
+          : _teamCtrls[0].text.trim();
+      final b = _teamCtrls[1].text.trim().isEmpty
+          ? s.defaultTeamB
+          : _teamCtrls[1].text.trim();
       names = ['$a 1', '$b 1', '$a 2', '$b 2'];
     } else {
       names = _playerCtrls.map((c) => c.text).toList();
@@ -148,12 +161,12 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     final totalRounds = int.tryParse(_roundCtrl.text);
 
     ref.read(gameSessionProvider.notifier).startGame(
-      gameType: widget.gameType,
-      gameMode: _mode,
-      playerNames: names,
-      pairs: pairs,
-      totalRounds: totalRounds,
-    );
+          gameType: widget.gameType,
+          gameMode: _mode,
+          playerNames: names,
+          pairs: pairs,
+          totalRounds: totalRounds,
+        );
 
     Navigator.pushAndRemoveUntil(
       context,
@@ -170,7 +183,11 @@ class _Label extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         text.toUpperCase(),
-        style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600),
+        style: TextStyle(
+            color: context.appHint,
+            fontSize: 11,
+            letterSpacing: 1.2,
+            fontWeight: FontWeight.w600),
       );
 }
 
@@ -189,15 +206,18 @@ class _Chip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withValues(alpha: 0.2) : AppColors.card,
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.2)
+              : context.appCard,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.primary : Colors.white12, width: 1.5),
+          border: Border.all(
+              color: selected ? AppColors.primary : context.appMuted, width: 1.5),
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? AppColors.primary : Colors.white54,
+              color: selected ? AppColors.primary : context.appSubtext,
               fontWeight: FontWeight.w600,
               fontSize: 15,
             ),

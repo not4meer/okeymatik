@@ -6,6 +6,7 @@ import '../models/game_enums.dart';
 import '../models/round.dart';
 import '../models/player.dart';
 import '../providers/game_provider.dart';
+import '../providers/settings_provider.dart';
 import 'sheet_widgets.dart';
 
 class ClassicRoundSheet extends ConsumerStatefulWidget {
@@ -27,6 +28,13 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
     Color(0xFFE91E63),
   ];
 
+  static const _quickOptions = [
+    (penalty: 2, label: '-2', type: ClassicFinishType.normal),
+    (penalty: 4, label: '-4', type: ClassicFinishType.okeyIle),
+    (penalty: 6, label: '-6', type: ClassicFinishType.eldenOkey),
+    (penalty: 8, label: '-8', type: ClassicFinishType.okeyIleCiftten),
+  ];
+
   final _engine = ClassicOkeyEngine();
 
   RoundScore _buildRound(List<Player> players) {
@@ -40,13 +48,14 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(gameSessionProvider)!;
+    final s = ref.watch(stringsProvider);
     final players = session.players;
     final preview = _winnerId != null ? _buildRound(players) : null;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: context.appSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -60,13 +69,14 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
         children: [
           const SheetHandle(),
           const SizedBox(height: 16),
-          const Text(
-            'El Sonucu — Klasik Okey',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+          Text(
+            s.roundResultClassic,
+            style: TextStyle(
+                color: context.appTextMain, fontSize: 18, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 20),
 
-          // Player tiles row — tap to select winner
+          // Player tiles
           Row(
             children: players.asMap().entries.map((e) {
               final p = e.value;
@@ -84,10 +94,12 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                       decoration: BoxDecoration(
                         color: isWinner
                             ? AppColors.primary.withValues(alpha: 0.1)
-                            : AppColors.card,
+                            : context.appCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isWinner ? AppColors.primary : color.withValues(alpha: 0.25),
+                          color: isWinner
+                              ? AppColors.primary
+                              : color.withValues(alpha: 0.25),
                           width: isWinner ? 2 : 1,
                         ),
                       ),
@@ -97,7 +109,9 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                           Text(
                             p.name,
                             style: TextStyle(
-                                color: color, fontSize: 11, fontWeight: FontWeight.w700),
+                                color: color,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700),
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                           ),
@@ -106,9 +120,15 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                             height: 22,
                             child: delta != null
                                 ? Text(
-                                    delta == 0 ? '—' : delta > 0 ? '+$delta' : '$delta',
+                                    delta == 0
+                                        ? '—'
+                                        : delta > 0
+                                            ? '+$delta'
+                                            : '$delta',
                                     style: TextStyle(
-                                      color: delta < 0 ? AppColors.siler : AppColors.penalty,
+                                      color: delta < 0
+                                          ? AppColors.siler
+                                          : AppColors.penalty,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -118,9 +138,9 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            isWinner ? '★ Biten' : 'Biten?',
+                            isWinner ? '★ ${s.winnerLabel}' : '${s.winnerLabel}?',
                             style: TextStyle(
-                              color: isWinner ? AppColors.primary : Colors.white24,
+                              color: isWinner ? AppColors.primary : context.appDim,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                             ),
@@ -135,32 +155,72 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
           ),
           const SizedBox(height: 20),
 
-          // Finish type
-          const SheetSectionLabel('Bitiş Türü'),
+          // Quick score buttons
+          SheetSectionLabel(s.finishScore),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: ClassicFinishType.values
-                .map((t) => SheetTypeChip(
-                      label: t.label,
-                      selected: _finishType == t,
-                      onTap: () => setState(() => _finishType = t),
-                    ))
-                .toList(),
+          Row(
+            children: _quickOptions.map((opt) {
+              final sel = _finishType == opt.type;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _finishType = opt.type),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 100),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    decoration: BoxDecoration(
+                      color: sel
+                          ? AppColors.siler.withValues(alpha: 0.18)
+                          : context.appCard,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: sel ? AppColors.siler : context.appMuted,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          opt.label,
+                          style: TextStyle(
+                            color: sel ? AppColors.siler : context.appSubtext,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          '+${opt.penalty}',
+                          style: TextStyle(
+                            color: sel
+                                ? AppColors.penalty.withValues(alpha: 0.8)
+                                : context.appDim,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
           const SizedBox(height: 14),
 
           SheetCheckRow(
-            label: 'Gösterge taşı gösterildi (+1 ceza diğerlerine)',
+            label: s.gosterge,
             value: _gosterge,
             onChanged: (v) => setState(() => _gosterge = v),
           ),
 
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _winnerId == null ? null : () => Navigator.pop(context, _buildRound(players)),
-            child: const Text('Kaydet'),
+            onPressed: _winnerId == null
+                ? null
+                : () => Navigator.pop(context, _buildRound(players)),
+            child: Text(s.save),
           ),
         ],
       ),

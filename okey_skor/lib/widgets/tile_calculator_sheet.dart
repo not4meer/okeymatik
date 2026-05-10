@@ -22,7 +22,9 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
   }
 
   void _add(int val) => setState(() => _history.add(val));
-  void _undo() => setState(() { if (_history.isNotEmpty) _history.removeLast(); });
+  void _undo() => setState(() {
+        if (_history.isNotEmpty) _history.removeLast();
+      });
   void _reset() => setState(() => _history.clear());
 
   @override
@@ -31,9 +33,9 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
     final status = _status;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: context.appSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
         left: 20,
@@ -48,27 +50,29 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Text(
+              Text(
                 'Taş Hesaplayıcı',
-                style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: context.appTextMain,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.refresh_rounded, color: Colors.white38),
+                icon: Icon(Icons.refresh_rounded, color: context.appHint),
                 onPressed: _reset,
                 tooltip: 'Sıfırla',
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // Score display
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 18),
             decoration: BoxDecoration(
-              color: status.color.withOpacity(0.1),
+              color: status.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: status.color.withOpacity(0.35)),
+              border: Border.all(color: status.color.withValues(alpha: 0.35)),
             ),
             child: Column(
               children: [
@@ -95,7 +99,6 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          // Tile buttons 1–13
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -112,15 +115,15 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
                 onTap: () => _add(val),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.card,
+                    color: context.appCard,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.white12),
+                    border: Border.all(color: context.appMuted),
                   ),
                   child: Center(
                     child: Text(
                       '$val',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.appTextMain,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
@@ -137,7 +140,7 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.penalty,
-                side: const BorderSide(color: Colors.white12),
+                side: BorderSide(color: context.appMuted),
                 minimumSize: Size.zero,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -159,17 +162,23 @@ enum _Status {
 
   String get label {
     switch (this) {
-      case _Status.cantOpen: return 'EL AÇMAZ';
-      case _Status.canOpen:  return 'EL AÇAR';
-      case _Status.siler:    return 'SİLER';
+      case _Status.cantOpen:
+        return 'EL AÇMAZ';
+      case _Status.canOpen:
+        return 'EL AÇAR';
+      case _Status.siler:
+        return 'SİLER';
     }
   }
 
   Color get color {
     switch (this) {
-      case _Status.cantOpen: return AppColors.penalty;
-      case _Status.canOpen:  return AppColors.siler;
-      case _Status.siler:    return const Color(0xFFFFAB40);
+      case _Status.cantOpen:
+        return AppColors.penalty;
+      case _Status.canOpen:
+        return AppColors.siler;
+      case _Status.siler:
+        return const Color(0xFFFFAB40);
     }
   }
 }

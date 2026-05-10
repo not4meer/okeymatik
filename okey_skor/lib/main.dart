@@ -1,3 +1,5 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,18 +12,17 @@ import 'providers/game_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Keep screen on — users leave phone on table during play
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    await Firebase.initializeApp();
+  }
   await WakelockPlus.enable();
-
-  // Portrait only — score table fits better
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  // Immersive status bar for more table space
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF0D0D0D),
+      systemNavigationBarColor: Color(0xFF1A1423),
     ),
   );
 
