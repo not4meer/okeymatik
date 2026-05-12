@@ -50,6 +50,8 @@ class ScoreScreen extends ConsumerWidget {
       }
     });
 
+    final dealer = _getDealerInfo(session);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(session.gameType == GameType.okey101 ? 'Okey 101' : s.classicOkey),
@@ -80,6 +82,7 @@ class ScoreScreen extends ConsumerWidget {
               hidden: hidden,
               colors: _playerColors,
               s: s,
+              dealerColIdx: dealer.colIdx,
               onEditRound: (i) => _editRound(context, ref, session, i),
             ),
           ),
@@ -95,6 +98,7 @@ class ScoreScreen extends ConsumerWidget {
             session: session,
             hidden: hidden,
             s: s,
+            dealerName: dealer.name,
             onEnterScore: () => _addRound(context, ref, session.gameType),
             onDice: () => _openDice(context),
             onCalc: () => _openCalc(context),
@@ -579,6 +583,34 @@ List<_DisplayColumn> _buildColumns(GameSession session, List<Color> colors) {
       )).toList();
 }
 
+// Returns the current dealer's display name and their column index.
+// Advances automatically as rounds are added (derived, no extra state).
+({String name, int colIdx}) _getDealerInfo(GameSession session) {
+  final elCount =
+      session.rounds.where((r) => r.label != 'Ceza').length;
+  final isPaired =
+      session.gameMode == GameMode.paired && session.pairs.length == 2;
+
+  if (isPaired) {
+    final pA = session.pairs[0];
+    final pB = session.pairs[1];
+    // Interleaved seating: A[0] → B[0] → A[1] → B[1]
+    final order = <({int playerIdx, int colIdx})>[];
+    if (pA.isNotEmpty) order.add((playerIdx: pA[0], colIdx: 0));
+    if (pB.isNotEmpty) order.add((playerIdx: pB[0], colIdx: 1));
+    if (pA.length > 1) order.add((playerIdx: pA[1], colIdx: 0));
+    if (pB.length > 1) order.add((playerIdx: pB[1], colIdx: 1));
+    if (order.isEmpty) return (name: '', colIdx: 0);
+    final d = order[elCount % order.length];
+    return (name: session.players[d.playerIdx].name, colIdx: d.colIdx);
+  }
+
+  final n = session.players.length;
+  if (n == 0) return (name: '', colIdx: 0);
+  final idx = elCount % n;
+  return (name: session.players[idx].name, colIdx: idx);
+}
+
 // ── Round history table ───────────────────────────────────
 
 class _RoundHistoryTable extends StatelessWidget {
@@ -586,6 +618,7 @@ class _RoundHistoryTable extends StatelessWidget {
   final bool hidden;
   final List<Color> colors;
   final AppStrings s;
+  final int dealerColIdx;
   final void Function(int index) onEditRound;
 
   const _RoundHistoryTable({
@@ -593,6 +626,7 @@ class _RoundHistoryTable extends StatelessWidget {
     required this.hidden,
     required this.colors,
     required this.s,
+    required this.dealerColIdx,
     required this.onEditRound,
   });
 
@@ -609,7 +643,7 @@ class _RoundHistoryTable extends StatelessWidget {
 
     return Column(
       children: [
-        _TableHeader(columns: columns),
+        _TableHeader(columns: columns, dealerColIdx: dealerColIdx),
         Divider(height: 1, color: context.appMuted),
         Expanded(
           child: rounds.isEmpty
@@ -647,29 +681,53 @@ class _RoundHistoryTable extends StatelessWidget {
 
 class _TableHeader extends StatelessWidget {
   final List<_DisplayColumn> columns;
+  final int dealerColIdx;
 
-  const _TableHeader({required this.columns});
+  const _TableHeader({required this.columns, required this.dealerColIdx});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       color: context.appSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
           const SizedBox(width: 52),
-          ...columns.map((c) => Expanded(
-                child: Text(
-                  c.name,
-                  style: TextStyle(
-                    color: c.color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+          ...columns.asMap().entries.map((e) {
+            final i = e.key;
+            final c = e.value;
+            final isDealer = i == dealerColIdx;
+            return Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    c.name,
+                    style: TextStyle(
+                      color: c.color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              )),
+                  const SizedBox(height: 3),
+                  AnimatedOpacity(
+                    opacity: isDealer ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 350),
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
           const SizedBox(width: 36),
         ],
       ),
@@ -821,6 +879,7 @@ class _BottomBar extends StatelessWidget {
   final GameSession session;
   final bool hidden;
   final AppStrings s;
+  final String dealerName;
   final VoidCallback onEnterScore;
   final VoidCallback onDice;
   final VoidCallback onCalc;
@@ -832,6 +891,7 @@ class _BottomBar extends StatelessWidget {
     required this.session,
     required this.hidden,
     required this.s,
+    required this.dealerName,
     required this.onEnterScore,
     required this.onDice,
     required this.onCalc,
@@ -845,6 +905,9 @@ class _BottomBar extends StatelessWidget {
     final roundCount = session.rounds.where((r) => r.label != 'Ceza').length;
     final totalRounds = session.totalRounds;
     final roundLabel = s.roundLabel(roundCount, totalRounds);
+    final screenW = MediaQuery.sizeOf(context).width;
+    final compact = screenW < 360;
+    final btnGap = compact ? 4.0 : 6.0;
 
     return Container(
       color: context.appSurface,
@@ -853,18 +916,70 @@ class _BottomBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(roundLabel,
-                  style: TextStyle(color: context.appHint, fontSize: 13)),
-              const Spacer(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(roundLabel,
+                            style: TextStyle(
+                                color: context.appHint, fontSize: 13)),
+                        if (dealerName.isNotEmpty) ...[
+                          Text('  ·  ',
+                              style: TextStyle(
+                                  color: context.appDim, fontSize: 11)),
+                          Text('Dağıtan:',
+                              style: TextStyle(
+                                  color: context.appHint, fontSize: 11)),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(
+                          position: Tween(
+                            begin: const Offset(0, 0.4),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                              parent: anim, curve: Curves.easeOut)),
+                          child: child,
+                        ),
+                      ),
+                      child: dealerName.isEmpty
+                          ? const SizedBox(key: ValueKey('empty'), height: 15)
+                          : Text(
+                              dealerName,
+                              key: ValueKey(dealerName),
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.primary
+                                    .withValues(alpha: 0.85),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: btnGap),
               if (onUndo != null) ...[
                 _IconBtn(
                   icon: Icons.undo_rounded,
-                  label: s.undoTitle,
+                  label: 'Geri Al',
                   onTap: onUndo!,
                   color: AppColors.penalty,
+                  compact: compact,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: btnGap),
               ],
               _IconBtn(
                 icon: hidden
@@ -872,24 +987,28 @@ class _BottomBar extends StatelessWidget {
                     : Icons.visibility_off_rounded,
                 label: hidden ? 'Göster' : 'Gizle',
                 onTap: onToggleHide,
+                compact: compact,
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: btnGap),
               if (session.gameType == GameType.okey101) ...[
                 _IconBtn(
                     icon: Icons.calculate_rounded,
                     label: 'Hesap',
-                    onTap: onCalc),
-                const SizedBox(width: 6),
+                    onTap: onCalc,
+                    compact: compact),
+                SizedBox(width: btnGap),
               ],
               _IconBtn(
                   icon: Icons.casino_rounded,
                   label: 'Zar',
-                  onTap: onDice),
-              const SizedBox(width: 6),
+                  onTap: onDice,
+                  compact: compact),
+              SizedBox(width: btnGap),
               _IconBtn(
                   icon: Icons.gavel_rounded,
                   label: 'Hakem',
-                  onTap: onChat),
+                  onTap: onChat,
+                  compact: compact),
             ],
           ),
           const SizedBox(height: 10),
@@ -909,28 +1028,33 @@ class _IconBtn extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final Color? color;
+  final bool compact;
 
   const _IconBtn(
       {required this.icon,
       required this.label,
       required this.onTap,
-      this.color});
+      this.color,
+      this.compact = false});
 
   @override
   Widget build(BuildContext context) {
+    final w = compact ? 38.0 : 44.0;
+    final h = compact ? 33.0 : 38.0;
+    final iconSz = compact ? 19.0 : 22.0;
     return GestureDetector(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 44,
-            height: 38,
+            width: w,
+            height: h,
             decoration: BoxDecoration(
               color: context.appCard,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color ?? AppColors.primary, size: 22),
+            child: Icon(icon, color: color ?? AppColors.primary, size: iconSz),
           ),
           const SizedBox(height: 3),
           Text(
@@ -1143,42 +1267,52 @@ class _ResultCard extends StatelessWidget {
   final GameSession session;
   const _ResultCard({required this.session});
 
-  // Parchment / adisyon palette — all hardcoded for screenshot isolation
-  static const _bg = Color(0xFFF5F0E8);
-  static const _border = Color(0xFF8B7355);
-  static const _ink = Color(0xFF1C1209);
-  static const _inkMid = Color(0xFF6B5840);
-  static const _inkFaint = Color(0xFFAA9C85);
-  static const _red = Color(0xFFAA1818);
-  static const _green = Color(0xFF1A6B3A);
-  static const _headerBg = Color(0xFFEDE4D0);
-  static const _stripeBg = Color(0xFFF0EAD8);
+  static const _woodA    = Color(0xFF100A04);
+  static const _woodB    = Color(0xFF1E1108);
+  static const _woodC    = Color(0xFF2E1A0A);
+  static const _paperTop = Color(0xFFFCF6E4);
+  static const _paperMid = Color(0xFFF5ECCC);
+  static const _paperBot = Color(0xFFEDE0B0);
+  static const _ink      = Color(0xFF1A1008);
+  static const _inkMid   = Color(0xFF5A4525);
+  static const _inkFaint = Color(0xFFBBAA88);
+  static const _border   = Color(0xFF8B7040);
+  static const _blue     = Color(0xFF1B3A6E);
+  static const _red      = Color(0xFF8B0F0F);
+  static const _hdrBg    = Color(0xFFEDE0B8);
+  static const _rowAlt   = Color(0xFFF0E8CC);
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    String p(int n) => n.toString().padLeft(2, '0');
-    final dateStr = '${p(now.day)}.${p(now.month)}.${now.year}';
-    final timeStr = '${p(now.hour)}:${p(now.minute)}';
+    String pad(int n) => n.toString().padLeft(2, '0');
+    final dateStr = '${pad(now.day)}.${pad(now.month)}.${now.year}';
+    final timeStr = '${pad(now.hour)}:${pad(now.minute)}';
 
     final n = session.players.length;
     final cols = _buildColumns(session, List.filled(n < 2 ? 2 : n, _ink));
 
-    // Separate el rounds and ceza rounds
     final elRounds = <(int, RoundScore)>[];
-    final cezaDeltas = <String, int>{};
+    // addPenalty stores: Ceza → +amount (positive), Siler → -amount (negative)
+    final cezaAmounts = <String, int>{};   // positive 'Ceza' deltas
+    final silerAmounts = <String, int>{};  // abs of negative 'Ceza' deltas
     int elNo = 0;
     for (final r in session.rounds) {
       if (r.label == 'Ceza') {
         for (final e in r.deltas.entries) {
-          cezaDeltas[e.key] = (cezaDeltas[e.key] ?? 0) + e.value;
+          if (e.value > 0) {
+            cezaAmounts[e.key] = (cezaAmounts[e.key] ?? 0) + e.value;
+          } else if (e.value < 0) {
+            silerAmounts[e.key] = (silerAmounts[e.key] ?? 0) + (-e.value);
+          }
         }
       } else {
         elNo++;
         elRounds.add((elNo, r));
       }
     }
-    final hasCeza = cezaDeltas.values.any((v) => v != 0);
+    final hasCeza = cezaAmounts.values.any((v) => v != 0);
+    final hasSiler = silerAmounts.values.any((v) => v != 0);
 
     final sorted = [...cols]
       ..sort((a, b) =>
@@ -1186,240 +1320,101 @@ class _ResultCard extends StatelessWidget {
     final winner = sorted.first;
     final gameLabel =
         session.gameType == GameType.okey101 ? 'Okey 101' : 'Klasik Okey';
+    final masaNo =
+        ((session.players.length * 7 + elRounds.length * 3) % 14) + 1;
 
     return SizedBox(
       width: 360,
-      height: 640,
-      child: Container(
-        color: _bg,
+      height: 640, // locked 9:16
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_woodC, _woodB, _woodA, _woodB, _woodC],
+            stops: [0.0, 0.3, 0.55, 0.75, 1.0],
+          ),
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: FittedBox(
-            fit: BoxFit.contain,
-            alignment: Alignment.topCenter,
-            child: SizedBox(
-              width: 340,
-              child: Container(
-                decoration:
-                    BoxDecoration(border: Border.all(color: _border, width: 1.5)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-              // ── Header ──
-              Container(
-                color: _headerBg,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-                child: Column(children: [
-                  const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(Icons.casino_rounded, color: _inkMid, size: 14),
-                    SizedBox(width: 7),
-                    Text('OKEYMATİK',
-                        style: TextStyle(
-                            color: _ink,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 3.5)),
-                  ]),
-                  const SizedBox(height: 5),
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Tarih: $dateStr',
-                            style: TextStyle(fontFamily: 'Caveat',
-                                color: _inkMid, fontSize: 13)),
-                        Text('Saat: $timeStr',
-                            style: TextStyle(fontFamily: 'Caveat',
-                                color: _inkMid, fontSize: 13)),
-                      ]),
-                ]),
-              ),
-              _hRule(),
-
-              // ── Game type ──
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                child: Text('— $gameLabel —',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Caveat',
-                        color: _ink,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        fontStyle: FontStyle.italic,
-                        letterSpacing: 0.5)),
-              ),
-              _hRule(),
-
-              // ── Player summary ──
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                child: Column(children: [
-                  Row(children: [
-                    Expanded(
-                        child: Text('OYUNCULAR / TAKIMLAR',
-                            style: TextStyle(fontFamily: 'Caveat',
-                                color: _inkMid,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2))),
-                    Text('TOPLAM',
-                        style: TextStyle(fontFamily: 'Caveat',
-                            color: _inkMid,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2)),
-                  ]),
-                  const SizedBox(height: 4),
-                  ...sorted.asMap().entries.map((e) {
-                    final rank = e.key + 1;
-                    final col = e.value;
-                    final total = col.totalFor(session.players);
-                    final isWinner = col.name == winner.name;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(children: [
-                        _RankCircle(rank: rank),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Row(children: [
-                            Text(col.name,
-                                style: TextStyle(fontFamily: 'Caveat',
-                                    color: isWinner ? _ink : _inkMid,
-                                    fontSize: 15,
-                                    fontWeight: isWinner
-                                        ? FontWeight.w700
-                                        : FontWeight.w400)),
-                            const Expanded(
-                                child: Padding(
-                              padding:
-                                  EdgeInsets.symmetric(horizontal: 4),
-                              child: CustomPaint(
-                                  painter: _DotLinePainter(color: _inkFaint),
-                                  child: SizedBox(height: 16)),
-                            )),
-                          ]),
-                        ),
-                        Text(total >= 0 ? '+$total' : '$total',
-                            style: TextStyle(fontFamily: 'Caveat',
-                                color: total < 0 ? _red : _green,
-                                fontSize: 17,
-                                fontWeight: FontWeight.w700)),
-                      ]),
-                    );
-                  }),
-                ]),
-              ),
-              _hRule(),
-
-              // ── Column header ──
-              _tableRow(
-                label: 'ELLER',
-                cells: cols
-                    .map((c) => _shortName(c.name))
-                    .toList(),
-                isHeader: true,
-              ),
-
-              // ── El rows ──
-              ...elRounds.asMap().entries.map((e) {
-                final idx = e.key;
-                final (no, round) = e.value;
-                return _tableRow(
-                  label: 'El $no',
-                  cells: cols
-                      .map((c) {
-                        final d = c.deltaFor(round);
-                        return d == 0 ? '—' : (d > 0 ? '+$d' : '$d');
-                      })
-                      .toList(),
-                  deltas: cols.map((c) => c.deltaFor(round)).toList(),
-                  stripe: idx.isOdd,
-                );
-              }),
-
-              // ── Ceza total ──
-              if (hasCeza) ...[
-                _hRule(),
-                _tableRow(
-                  label: 'CEZA',
-                  cells: cols
-                      .map((c) {
-                        final v = c.playerIds
-                            .fold(0, (s, id) => s + (cezaDeltas[id] ?? 0));
-                        return v == 0 ? '—' : '$v';
-                      })
-                      .toList(),
-                  deltas: cols
-                      .map((c) => c.playerIds
-                          .fold(0, (s, id) => s + (cezaDeltas[id] ?? 0)))
-                      .toList(),
-                  isBold: true,
-                ),
-              ],
-              _hRule(),
-
-              // ── Final score ──
-              _tableRow(
-                label: 'FİNAL',
-                cells: cols.map((c) {
-                  final t = c.totalFor(session.players);
-                  return t >= 0 ? '+$t' : '$t';
-                }).toList(),
-                deltas: cols
-                    .map((c) => c.totalFor(session.players))
-                    .toList(),
-                isBold: true,
-                isHeader: true,
-              ),
-              _hRule(),
-
-              // ── Winner ──
-              Container(
-                margin: const EdgeInsets.fromLTRB(14, 8, 14, 4),
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                decoration: BoxDecoration(
-                  border: Border.all(color: _border, width: 1.2),
-                ),
-                child: Column(children: [
-                  const Text('— KAZANAN —',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: _inkMid,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2)),
-                  const SizedBox(height: 5),
-                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    const Text('👑 ', style: TextStyle(fontSize: 18)),
-                    Text(winner.name,
-                        style: TextStyle(fontFamily: 'Caveat',
-                            color: _ink,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            fontStyle: FontStyle.italic)),
-                  ]),
-                ]),
-              ),
-
-              // ── Footer ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 6, 0, 6),
-                child: Column(children: [
-                  const Divider(color: _inkFaint, height: 1),
-                  const SizedBox(height: 5),
-                  Text(
-                    'Okeymatik  ·  Masa çevresinde skor & kural asistanı',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Caveat',
-                        color: _inkFaint,
-                        fontSize: 12,
-                        letterSpacing: 0.5),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          child: LayoutBuilder(
+            builder: (_, constraints) => FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [_paperTop, _paperMid, _paperBot],
+                      stops: [0.0, 0.5, 1.0],
+                    ),
+                    borderRadius: BorderRadius.all(Radius.circular(1)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xBB000000),
+                        blurRadius: 28,
+                        spreadRadius: 3,
+                        offset: Offset(0, 12),
+                      ),
+                      BoxShadow(
+                        color: Color(0x44000000),
+                        blurRadius: 10,
+                        offset: Offset(-3, 4),
+                      ),
+                    ],
                   ),
-                  ]),
-                ),
-                  ],
+                  child: Stack(
+                    children: [
+                      // Watermark
+                      Positioned.fill(
+                        child: Center(
+                          child: Opacity(
+                            opacity: 0.035,
+                            child: Text(
+                              'OKEYMATİK',
+                              style: const TextStyle(
+                                fontFamily: 'Caveat',
+                                fontSize: 50,
+                                fontWeight: FontWeight.w900,
+                                color: _ink,
+                                letterSpacing: 3,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Content
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildHeader(gameLabel, dateStr, timeStr, masaNo),
+                          _rule(),
+                          _buildPlayers(cols, sorted, winner),
+                          _rule(),
+                          _buildTable(cols, elRounds),
+                          _rule(),
+                          _buildTotals(cols, hasCeza, cezaAmounts, hasSiler, silerAmounts),
+                          _doubleRule(),
+                          _buildFinal(cols),
+                          _rule(),
+                          _buildWinner(winner),
+                          _buildFooter(),
+                        ],
+                      ),
+                      // Corner marks
+                      Positioned(top: 7, left: 7, child: _corner()),
+                      Positioned(top: 7, right: 7, child: _corner(flipH: true)),
+                      Positioned(bottom: 7, left: 7, child: _corner(flipV: true)),
+                      Positioned(
+                          bottom: 7,
+                          right: 7,
+                          child: _corner(flipH: true, flipV: true)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1429,64 +1424,399 @@ class _ResultCard extends StatelessWidget {
     );
   }
 
-  Widget _hRule() =>
-      Container(height: 1, color: _inkFaint.withValues(alpha: 0.5));
-
-  Widget _tableRow({
-    required String label,
-    required List<String> cells,
-    List<int>? deltas,
-    bool isHeader = false,
-    bool isBold = false,
-    bool stripe = false,
-  }) {
+  Widget _buildHeader(
+      String game, String date, String time, int masaNo) {
     return Container(
-      color: isHeader
-          ? _headerBg
-          : stripe
-              ? _stripeBg
-              : null,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      child: Row(children: [
-        SizedBox(
-          width: 44,
-          child: Text(label,
-              style: TextStyle(fontFamily: 'Caveat',
-                  color: isHeader || isBold ? _inkMid : _ink,
-                  fontSize: isHeader ? 13 : 14,
-                  fontWeight: isHeader || isBold ? FontWeight.w700 : FontWeight.w500,
-                  letterSpacing: isHeader ? 0.8 : 0)),
+      color: _hdrBg,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      child: Column(children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.casino_rounded, color: _inkMid, size: 12),
+            const SizedBox(width: 5),
+            const Text(
+              'OKEYMATİK',
+              style: TextStyle(
+                color: _ink,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3.5,
+              ),
+            ),
+          ],
         ),
-        ...cells.asMap().entries.map((e) {
-          final i = e.key;
-          final val = e.value;
-          final delta = deltas != null && i < deltas.length ? deltas[i] : 0;
-          final textColor = isHeader
-              ? _inkMid
-              : val == '—'
-                  ? _inkFaint
-                  : delta < 0
-                      ? _red
-                      : delta > 0
-                          ? _green
-                          : _ink;
-          return Expanded(
-            child: Text(val,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Caveat',
-                    color: textColor,
-                    fontSize: isHeader ? 13 : 14,
-                    fontWeight: isHeader || isBold ? FontWeight.w700 : FontWeight.w500)),
+        const SizedBox(height: 6),
+        Text(
+          '— $game —',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontFamily: 'Caveat',
+            color: _ink,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            fontStyle: FontStyle.italic,
+            height: 1,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(children: [
+          Text('Masa No: $masaNo',
+              style: const TextStyle(
+                  fontFamily: 'Caveat', color: _inkMid, fontSize: 12)),
+          const Spacer(),
+          Text('Tarih: $date',
+              style: const TextStyle(
+                  fontFamily: 'Caveat', color: _inkMid, fontSize: 12)),
+          const Spacer(),
+          Text('Saat: $time',
+              style: const TextStyle(
+                  fontFamily: 'Caveat', color: _inkMid, fontSize: 12)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildPlayers(
+    List<_DisplayColumn> cols,
+    List<_DisplayColumn> sorted,
+    _DisplayColumn winner,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      child: Column(children: [
+        Row(children: [
+          const Expanded(
+            child: Text(
+              'OYUNCULAR / TAKIMLAR',
+              style: TextStyle(
+                fontFamily: 'Caveat',
+                color: _inkMid,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const Text(
+            'TOPLAM',
+            style: TextStyle(
+              fontFamily: 'Caveat',
+              color: _inkMid,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 5),
+        ...sorted.asMap().entries.map((e) {
+          final rank = e.key + 1;
+          final col = e.value;
+          final total = col.totalFor(session.players);
+          final isW = col.name == winner.name;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2.5),
+            child: Row(children: [
+              _RankCircle(rank: rank),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Row(children: [
+                  Text(col.name,
+                      style: TextStyle(
+                        fontFamily: 'Caveat',
+                        color: isW ? _ink : _inkMid,
+                        fontSize: 15,
+                        fontWeight:
+                            isW ? FontWeight.w700 : FontWeight.w400,
+                      )),
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4),
+                      child: CustomPaint(
+                        painter: _DotLinePainter(color: _inkFaint),
+                        child: SizedBox(height: 16),
+                      ),
+                    ),
+                  ),
+                ]),
+              ),
+              Text(
+                total >= 0 ? '+$total' : '$total',
+                style: TextStyle(
+                  fontFamily: 'Caveat',
+                  color: total < 0 ? _red : _blue,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ]),
           );
         }),
       ]),
     );
   }
 
+  Widget _buildTable(
+      List<_DisplayColumn> cols, List<(int, RoundScore)> elRounds) {
+    return Column(children: [
+      _tRow(
+        label: 'ELLER',
+        cells: cols.map((c) => _shortName(c.name)).toList(),
+        acik: 'AÇIKLAMA',
+        isHeader: true,
+      ),
+      Container(height: 0.5, color: _inkFaint.withValues(alpha: 0.5)),
+      ...elRounds.asMap().entries.map((e) {
+        final idx = e.key;
+        final (no, round) = e.value;
+        return _tRow(
+          label: 'El $no',
+          cells: cols.map((c) {
+            final d = c.deltaFor(round);
+            return d == 0 ? '—' : (d > 0 ? '+$d' : '$d');
+          }).toList(),
+          deltas: cols.map((c) => c.deltaFor(round)).toList(),
+          acik: round.label,
+          stripe: idx.isOdd,
+        );
+      }),
+    ]);
+  }
+
+  Widget _buildTotals(
+    List<_DisplayColumn> cols,
+    bool hasCeza,
+    Map<String, int> cezaAmounts,
+    bool hasSiler,
+    Map<String, int> silerAmounts,
+  ) {
+    return Column(children: [
+      if (hasCeza)
+        _tRow(
+          label: 'TOPLAM\nCEZA',
+          cells: cols.map((c) {
+            final v = c.playerIds
+                .fold(0, (s, id) => s + (cezaAmounts[id] ?? 0));
+            return v == 0 ? '—' : '+$v';
+          }).toList(),
+          deltas: cols
+              .map((c) => c.playerIds
+                  .fold(0, (s, id) => s + (cezaAmounts[id] ?? 0)))
+              .toList(),
+          acik: '',
+          isBold: true,
+        ),
+      if (hasSiler)
+        _tRow(
+          label: 'TOPLAM\nSİLER',
+          cells: cols.map((c) {
+            final v = c.playerIds
+                .fold(0, (s, id) => s + (silerAmounts[id] ?? 0));
+            return v == 0 ? '—' : '-$v';
+          }).toList(),
+          deltas: cols
+              .map((c) => -(c.playerIds
+                  .fold(0, (s, id) => s + (silerAmounts[id] ?? 0))))
+              .toList(),
+          acik: '',
+          isBold: true,
+        ),
+    ]);
+  }
+
+  Widget _buildFinal(List<_DisplayColumn> cols) {
+    return Container(
+      color: _hdrBg,
+      child: _tRow(
+        label: 'FİNAL\nSKORU',
+        cells: cols.map((c) {
+          final t = c.totalFor(session.players);
+          return t >= 0 ? '+$t' : '$t';
+        }).toList(),
+        deltas: cols.map((c) => c.totalFor(session.players)).toList(),
+        acik: '',
+        isBold: true,
+        isHeader: true,
+        bigCells: true,
+      ),
+    );
+  }
+
+  Widget _buildWinner(_DisplayColumn winner) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(30, 10, 30, 8),
+      child: Column(children: [
+        const Text(
+          '— KAZANAN —',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: _inkMid,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.emoji_events_rounded, color: _ink, size: 22),
+            Text(
+              winner.name,
+              style: const TextStyle(
+                fontFamily: 'Caveat',
+                color: _ink,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          height: 1.5,
+          color: _ink,
+        ),
+        const SizedBox(height: 4),
+      ]),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      color: _hdrBg,
+      padding: const EdgeInsets.fromLTRB(14, 8, 10, 14),
+      child: Row(children: [
+        const Expanded(
+          child: Text(
+            'Okeymatik',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Caveat',
+              color: _inkFaint,
+              fontSize: 11,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const _StampWidget(),
+      ]),
+    );
+  }
+
+  Widget _tRow({
+    required String label,
+    required List<String> cells,
+    String acik = '',
+    List<int>? deltas,
+    bool isHeader = false,
+    bool isBold = false,
+    bool stripe = false,
+    bool bigCells = false,
+  }) {
+    final bg =
+        (isHeader && !bigCells) ? _hdrBg : stripe ? _rowAlt : null;
+    final labelTs = TextStyle(
+      fontFamily: 'Caveat',
+      color: isHeader || isBold ? _inkMid : _ink,
+      fontSize: isHeader ? 10 : 11,
+      fontWeight:
+          isHeader || isBold ? FontWeight.w700 : FontWeight.w500,
+      letterSpacing: isHeader ? 0.5 : 0,
+      height: 1.2,
+    );
+
+    return Container(
+      color: bg,
+      padding: EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: isHeader ? 5 : (isBold ? 5 : 4)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 42, child: Text(label, style: labelTs)),
+          ...cells.asMap().entries.map((e) {
+            final i = e.key;
+            final val = e.value;
+            final delta =
+                deltas != null && i < deltas.length ? deltas[i] : 0;
+            final Color tc;
+            if (isHeader) {
+              tc = _inkMid;
+            } else if (val == '—') {
+              tc = _inkFaint;
+            } else if (delta < 0) {
+              tc = _red;
+            } else if (delta > 0) {
+              tc = _blue;
+            } else {
+              tc = _ink;
+            }
+            return Expanded(
+              child: Text(
+                val,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Caveat',
+                  color: tc,
+                  fontSize: bigCells ? 19 : (isHeader ? 12 : 14),
+                  fontWeight: isHeader || isBold || bigCells
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                ),
+              ),
+            );
+          }),
+          SizedBox(
+            width: 52,
+            child: acik.isNotEmpty
+                ? Text(
+                    acik,
+                    style: const TextStyle(
+                      fontFamily: 'Caveat',
+                      color: _inkMid,
+                      fontSize: 10,
+                      fontStyle: FontStyle.italic,
+                      height: 1.15,
+                    ),
+                    textAlign: TextAlign.right,
+                  )
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rule() =>
+      Container(height: 0.8, color: _inkFaint.withValues(alpha: 0.6));
+
+  Widget _doubleRule() => Column(children: [
+        Container(height: 0.8, color: _inkFaint.withValues(alpha: 0.8)),
+        const SizedBox(height: 2.5),
+        Container(height: 0.8, color: _inkFaint.withValues(alpha: 0.8)),
+      ]);
+
+  Widget _corner({bool flipH = false, bool flipV = false}) {
+    return Transform.scale(
+      scaleX: flipH ? -1.0 : 1.0,
+      scaleY: flipV ? -1.0 : 1.0,
+      child: SizedBox(
+        width: 12,
+        height: 12,
+        child: CustomPaint(painter: _CornerPainter(color: _border)),
+      ),
+    );
+  }
+
   String _shortName(String name) {
     final parts = name.split(' ');
     final first = parts.first;
-    return first.length > 6 ? first.substring(0, 6) : first;
+    return first.length > 7 ? first.substring(0, 7) : first;
   }
 }
 
@@ -1602,7 +1932,7 @@ class _RankCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const color = Color(0xFF6B5840);
+    const color = Color(0xFF5A4525);
     return Container(
       width: 18,
       height: 18,
@@ -1612,8 +1942,11 @@ class _RankCircle extends StatelessWidget {
       ),
       child: Center(
         child: Text('$rank',
-            style: TextStyle(fontFamily: 'Caveat',
-                color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+            style: const TextStyle(
+                fontFamily: 'Caveat',
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -1632,6 +1965,75 @@ class _DotLinePainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y), 0.8, paint);
       x += 4.5;
     }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+class _StampWidget extends StatelessWidget {
+  const _StampWidget();
+
+  static const _c = Color(0xFF8B7040);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: _c.withValues(alpha: 0.35), width: 1.5),
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: _c.withValues(alpha: 0.2), width: 0.7),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'OKEYMATİK',
+              style: TextStyle(
+                fontFamily: 'Caveat',
+                color: _c.withValues(alpha: 0.45),
+                fontSize: 6.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Icon(Icons.emoji_events_rounded, color: _c.withValues(alpha: 0.45), size: 14),
+            Text(
+              'TEBRİKLER!',
+              style: TextStyle(
+                fontFamily: 'Caveat',
+                color: _c.withValues(alpha: 0.45),
+                fontSize: 6.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CornerPainter extends CustomPainter {
+  final Color color;
+  const _CornerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawLine(Offset.zero, Offset(size.width, 0), paint);
+    canvas.drawLine(Offset.zero, Offset(0, size.height), paint);
   }
 
   @override

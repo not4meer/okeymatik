@@ -91,11 +91,6 @@ class HomeScreen extends ConsumerWidget {
                     fontWeight: FontWeight.w800,
                     color: context.appTextMain),
               ),
-              const SizedBox(height: 6),
-              Text(
-                s.appSubtitle,
-                style: TextStyle(color: context.appSubtext, fontSize: 14),
-              ),
               const Spacer(),
               Text(
                 s.selectGame,
@@ -105,7 +100,6 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _GameCard(
                 title: s.classicOkey,
-                subtitle: '4 oyuncu · tur bazlı',
                 iconWidget: const _TileIcon(
                   labels: ['6', '7'],
                   tileColors: [Color(0xFF111827), Color(0xFFDC2626)],
@@ -116,7 +110,6 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 14),
               _GameCard(
                 title: 'Okey 101',
-                subtitle: 'Tekli & çiftli · 101 puana',
                 iconWidget: const _TileIcon(
                   labels: ['1', '0', '1'],
                   tileColors: [AppColors.primary, AppColors.primary, AppColors.primary],
@@ -252,14 +245,12 @@ class HomeScreen extends ConsumerWidget {
 
 class _GameCard extends StatelessWidget {
   final String title;
-  final String subtitle;
   final Widget iconWidget;
   final Color color;
   final VoidCallback onTap;
 
   const _GameCard({
     required this.title,
-    required this.subtitle,
     required this.iconWidget,
     required this.color,
     required this.onTap,
@@ -299,26 +290,13 @@ class _GameCard extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: context.appTextMain,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.appSubtext,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: context.appTextMain,
+                  ),
                 ),
               ),
               Container(

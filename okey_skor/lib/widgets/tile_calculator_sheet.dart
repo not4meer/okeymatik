@@ -68,7 +68,7 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
               color: status.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
@@ -76,23 +76,41 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
             ),
             child: Column(
               children: [
-                Text(
-                  total.toString(),
-                  style: TextStyle(
-                    color: status.color,
-                    fontSize: 60,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: status.color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    status.label,
+                    style: TextStyle(
+                      color: status.color,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 2,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 16),
+                total > 0
+                    ? _YanDisplay(total: total, color: status.color)
+                    : Text(
+                        '0',
+                        style: TextStyle(
+                          color: status.color,
+                          fontSize: 56,
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                        ),
+                      ),
+                const SizedBox(height: 8),
                 Text(
-                  status.label,
+                  '$total puan',
                   style: TextStyle(
-                    color: status.color,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2,
+                    color: status.color.withValues(alpha: 0.55),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -149,6 +167,53 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
               label: const Text('Geri Al'),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _YanDisplay extends StatelessWidget {
+  final int total;
+  final Color color;
+  const _YanDisplay({required this.total, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final q = total ~/ 3;
+    final r = total % 3;
+    return RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: '$q ',
+            style: TextStyle(
+              color: color,
+              fontSize: 52,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+          TextSpan(
+            text: 'yan',
+            style: TextStyle(
+              color: color.withValues(alpha: 0.65),
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              height: 1.6,
+            ),
+          ),
+          if (r > 0)
+            TextSpan(
+              text: ' $r',
+              style: TextStyle(
+                color: color,
+                fontSize: 52,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
         ],
       ),
     );
