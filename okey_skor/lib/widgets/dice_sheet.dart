@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' show Random, sin, pi, max;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
@@ -88,13 +88,13 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
         left: 24,
         right: 24,
         top: 16,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 28,
+        bottom: max(0.0, MediaQuery.viewInsetsOf(context).bottom) + 16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SheetHandle(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
             s.diceTitle,
             style: TextStyle(
@@ -102,31 +102,25 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
                 fontSize: 18,
                 fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 28),
-          // Dice face
+          const SizedBox(height: 20),
           GestureDetector(
             onTap: _roll,
             child: AnimatedBuilder(
               animation: Listenable.merge([_shakeCtrl, _bounceCtrl]),
               builder: (_, child) {
-                final shake = _rolling
-                    ? sin(_shakeCtrl.value * pi) * 0.28
-                    : 0.0;
+                final shake = _rolling ? sin(_shakeCtrl.value * pi) * 0.28 : 0.0;
                 final scale = _rolling ? 1.0 : _bounceAnim.value;
                 return Transform.rotate(
                   angle: shake,
-                  child: Transform.scale(
-                    scale: scale,
-                    child: child,
-                  ),
+                  child: Transform.scale(scale: scale, child: child),
                 );
               },
               child: Container(
-                width: 136,
-                height: 136,
+                width: 112,
+                height: 112,
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF252040) : Colors.white,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: _rolling
                         ? AppColors.primary
@@ -135,28 +129,25 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(
-                          alpha: _rolling ? 0.35 : 0.12),
+                      color: AppColors.primary.withValues(alpha: _rolling ? 0.35 : 0.12),
                       blurRadius: _rolling ? 32 : 14,
                       spreadRadius: _rolling ? 4 : 1,
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(16),
                   child: _DiceFace(
                     value: _value,
                     dotColor: _rolling
                         ? AppColors.primary
-                        : (isDark
-                            ? const Color(0xFFF0F4FF)
-                            : const Color(0xFF0D1F3C)),
+                        : (isDark ? const Color(0xFFF0F4FF) : const Color(0xFF0D1F3C)),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Text(
@@ -169,7 +160,7 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _rolling ? null : _roll,
             icon: const Icon(Icons.casino_rounded, size: 20),

@@ -33,7 +33,7 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
 
     setState(() => _sending = true);
 
-    // Firebase (background)
+    // Firebase backup
     if (Firebase.apps.isNotEmpty) {
       FirebaseDatabase.instance.ref('complaints').push().set({
         'text': text,
@@ -42,38 +42,47 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
     }
 
     // EmailJS
+    bool success = false;
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'origin': 'http://localhost',
+        },
         body: jsonEncode({
           'service_id': AppConfig.emailjsServiceId,
           'template_id': AppConfig.emailjsTemplateId,
           'user_id': AppConfig.emailjsPublicKey,
           'template_params': {'message': text},
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 15));
+      success = response.statusCode == 200;
     } catch (_) {}
 
     if (!mounted) return;
     setState(() {
       _sending = false;
-      _sent = true;
+      _sent = success;
     });
-    await Future.delayed(const Duration(milliseconds: 1800));
-    if (mounted) Navigator.pop(context);
+    if (success) {
+      await Future.delayed(const Duration(milliseconds: 1800));
+      if (mounted) Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final s = widget.s;
-    return SafeArea(
-      child: Container(
-        decoration: BoxDecoration(
-          color: context.appSurface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+    final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, keyboardHeight + 24),
+        child: SafeArea(
+        top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

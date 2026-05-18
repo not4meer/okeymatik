@@ -121,24 +121,19 @@ class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
         ? tiles.where((t) => t.id == activeId).firstOrNull
         : null;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.65,
-      maxChildSize: 0.95,
-      minChildSize: 0.4,
-      builder: (_, scrollCtrl) => Container(
-        decoration: BoxDecoration(
-          color: context.appSurface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            controller: scrollCtrl,
-            physics: const ClampingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-              ),
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.zero,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -335,7 +330,7 @@ class _Okey101RoundSheetState extends ConsumerState<Okey101RoundSheet> {
             ),
           ),
         ),
-      ),
     );
   }
 }
+

@@ -4,6 +4,7 @@ import '../models/game_enums.dart';
 import '../models/game_session.dart';
 import '../models/player.dart';
 import '../models/round.dart';
+import '../services/analytics_service.dart';
 import '../services/storage_service.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((_) => throw UnimplementedError());
@@ -46,6 +47,7 @@ class GameSessionNotifier extends StateNotifier<GameSession?> {
       totalRounds: totalRounds,
     );
     _save();
+    AnalyticsService.logGameStarted(gameType.name);
   }
 
   void addPenalty(String playerId, int amount) {

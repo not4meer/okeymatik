@@ -8,14 +8,32 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app.dart';
 import 'providers/game_provider.dart';
+import 'services/ads_initializer.dart';
+import 'services/crashlytics_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-    await Firebase.initializeApp();
+  // Firebase: Android uses google-services.json, iOS uses GoogleService-Info.plist
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      await CrashlyticsService.initialize();
+      if (CrashlyticsService.onPlatformError != null) {
+        PlatformDispatcher.instance.onError = CrashlyticsService.onPlatformError!;
+      }
+    } catch (e) {
+      debugPrint('Firebase init failed: $e');
+    }
   }
-  try { await WakelockPlus.enable(); } catch (_) {}
+
+  // AdMob (Android & iOS only — web uses stub)
+  await AdsInitializer.initialize();
+
+  try {
+    await WakelockPlus.enable();
+  } catch (_) {}
+
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   SystemChrome.setSystemUIOverlayStyle(

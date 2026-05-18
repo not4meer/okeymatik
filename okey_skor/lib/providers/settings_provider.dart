@@ -12,6 +12,7 @@ class AppSettings {
   final String language;
   final int firstLaunchTimestamp;
   final bool ratingShown;
+  final int completedGamesCount;
 
   const AppSettings({
     required this.username,
@@ -20,16 +21,12 @@ class AppSettings {
     required this.language,
     required this.firstLaunchTimestamp,
     required this.ratingShown,
+    required this.completedGamesCount,
   });
 
   bool get isFirstLaunch => username.isEmpty;
 
-  bool get shouldShowRating {
-    if (ratingShown) return false;
-    if (firstLaunchTimestamp == 0) return false;
-    final elapsed = DateTime.now().millisecondsSinceEpoch - firstLaunchTimestamp;
-    return elapsed >= const Duration(hours: 48).inMilliseconds;
-  }
+  bool get shouldShowRating => !ratingShown && completedGamesCount >= 5;
 
   AppSettings copyWith({
     String? username,
@@ -38,6 +35,7 @@ class AppSettings {
     String? language,
     int? firstLaunchTimestamp,
     bool? ratingShown,
+    int? completedGamesCount,
   }) {
     return AppSettings(
       username: username ?? this.username,
@@ -46,6 +44,7 @@ class AppSettings {
       language: language ?? this.language,
       firstLaunchTimestamp: firstLaunchTimestamp ?? this.firstLaunchTimestamp,
       ratingShown: ratingShown ?? this.ratingShown,
+      completedGamesCount: completedGamesCount ?? this.completedGamesCount,
     );
   }
 }
@@ -68,6 +67,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   static const _keyLanguage = 'settings_language';
   static const _keyFirstLaunch = 'settings_first_launch_ts';
   static const _keyRatingShown = 'settings_rating_shown';
+  static const _keyCompletedGames = 'settings_completed_games';
 
   SettingsNotifier(this._prefs) : super(const AppSettings(
     username: '',
@@ -76,6 +76,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     language: 'tr',
     firstLaunchTimestamp: 0,
     ratingShown: false,
+    completedGamesCount: 0,
   )) {
     _load();
   }
@@ -97,6 +98,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       _prefs.setInt(_keyFirstLaunch, firstLaunchTs);
     }
     final ratingShown = _prefs.getBool(_keyRatingShown) ?? false;
+    final completedGamesCount = _prefs.getInt(_keyCompletedGames) ?? 0;
 
     state = AppSettings(
       username: username,
@@ -105,6 +107,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       language: language,
       firstLaunchTimestamp: firstLaunchTs,
       ratingShown: ratingShown,
+      completedGamesCount: completedGamesCount,
     );
   }
 
@@ -134,5 +137,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   void markRatingShown() {
     _prefs.setBool(_keyRatingShown, true);
     state = state.copyWith(ratingShown: true);
+  }
+
+  void incrementCompletedGames() {
+    final next = state.completedGamesCount + 1;
+    _prefs.setInt(_keyCompletedGames, next);
+    state = state.copyWith(completedGamesCount: next);
   }
 }

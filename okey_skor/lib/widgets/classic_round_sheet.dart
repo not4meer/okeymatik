@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import '../engines/classic_okey_engine.dart';
-import '../models/game_enums.dart';
 import '../models/round.dart';
 import '../models/player.dart';
 import '../providers/game_provider.dart';
@@ -18,7 +17,7 @@ class ClassicRoundSheet extends ConsumerStatefulWidget {
 
 class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
   String? _winnerId;
-  ClassicFinishType _finishType = ClassicFinishType.normal;
+  int _penalty = 2;
   bool _gosterge = false;
 
   static const _colors = [
@@ -28,19 +27,14 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
     Color(0xFFE91E63),
   ];
 
-  static const _quickOptions = [
-    (penalty: 2, label: '-2', type: ClassicFinishType.normal),
-    (penalty: 4, label: '-4', type: ClassicFinishType.okeyIle),
-    (penalty: 6, label: '-6', type: ClassicFinishType.eldenOkey),
-    (penalty: 8, label: '-8', type: ClassicFinishType.okeyIleCiftten),
-  ];
+  static const _penalties = [2, 4, 6, 8];
 
   final _engine = ClassicOkeyEngine();
 
   RoundScore _buildRound(List<Player> players) {
     return _engine.calculate({
       'winnerId': _winnerId!,
-      'finishType': _finishType,
+      'penalty': _penalty,
       'gosterge': _gosterge,
     }, players);
   }
@@ -97,9 +91,7 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                             : context.appCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isWinner
-                              ? AppColors.primary
-                              : color.withValues(alpha: 0.25),
+                          color: isWinner ? AppColors.primary : color.withValues(alpha: 0.25),
                           width: isWinner ? 2 : 1,
                         ),
                       ),
@@ -109,9 +101,7 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                           Text(
                             p.name,
                             style: TextStyle(
-                                color: color,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700),
+                                color: color, fontSize: 11, fontWeight: FontWeight.w700),
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                           ),
@@ -120,15 +110,9 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                             height: 22,
                             child: delta != null
                                 ? Text(
-                                    delta == 0
-                                        ? '—'
-                                        : delta > 0
-                                            ? '+$delta'
-                                            : '$delta',
+                                    delta == 0 ? '—' : '$delta',
                                     style: TextStyle(
-                                      color: delta < 0
-                                          ? AppColors.siler
-                                          : AppColors.penalty,
+                                      color: delta < 0 ? AppColors.penalty : context.appHint,
                                       fontSize: 13,
                                       fontWeight: FontWeight.w800,
                                     ),
@@ -155,52 +139,35 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
           ),
           const SizedBox(height: 20),
 
-          // Quick score buttons
+          // Penalty buttons
           SheetSectionLabel(s.finishScore),
           const SizedBox(height: 10),
           Row(
-            children: _quickOptions.map((opt) {
-              final sel = _finishType == opt.type;
+            children: _penalties.map((p) {
+              final sel = _penalty == p;
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => setState(() => _finishType = opt.type),
+                  onTap: () => setState(() => _penalty = p),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 100),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: sel
-                          ? AppColors.siler.withValues(alpha: 0.18)
-                          : context.appCard,
+                      color: sel ? AppColors.penalty.withValues(alpha: 0.15) : context.appCard,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: sel ? AppColors.siler : context.appMuted,
+                        color: sel ? AppColors.penalty : context.appMuted,
+                        width: sel ? 2 : 1,
                       ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          opt.label,
-                          style: TextStyle(
-                            color: sel ? AppColors.siler : context.appSubtext,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          '+${opt.penalty}',
-                          style: TextStyle(
-                            color: sel
-                                ? AppColors.penalty.withValues(alpha: 0.8)
-                                : context.appDim,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    child: Text(
+                      '-$p',
+                      style: TextStyle(
+                        color: sel ? AppColors.penalty : context.appSubtext,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),

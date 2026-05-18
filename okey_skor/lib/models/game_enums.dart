@@ -3,12 +3,8 @@ enum GameType { classicOkey, okey101 }
 enum GameMode { solo, paired }
 
 enum ClassicFinishType {
-  normal,           // winner -2, others +2
-  okeyIle,          // winner -4, others +4
-  elden,            // winner -4, others +4
-  ciftten,          // winner -4, others +4
-  eldenOkey,        // winner -6, others +6
-  okeyIleCiftten,   // winner -8, others +8
+  normal,  // base penalty: 2
+  cifte,   // base penalty: 4 (7 çift)
 }
 
 enum Okey101FinishType {
@@ -21,39 +17,15 @@ enum Okey101FinishType {
 }
 
 extension ClassicFinishTypeLabel on ClassicFinishType {
-  String get label {
-    switch (this) {
-      case ClassicFinishType.normal:
-        return 'Normal (-2/+2)';
-      case ClassicFinishType.okeyIle:
-        return 'Okey ile (-4/+4)';
-      case ClassicFinishType.elden:
-        return 'Elden (-4/+4)';
-      case ClassicFinishType.ciftten:
-        return 'Çiftten (-4/+4)';
-      case ClassicFinishType.eldenOkey:
-        return 'Elden+Okey (-6/+6)';
-      case ClassicFinishType.okeyIleCiftten:
-        return 'Okey+Çift (-8/+8)';
-    }
-  }
+  String get label => switch (this) {
+    ClassicFinishType.normal => 'Normal',
+    ClassicFinishType.cifte  => 'Çifte',
+  };
 
-  int get penalty {
-    switch (this) {
-      case ClassicFinishType.normal:
-        return 2;
-      case ClassicFinishType.okeyIle:
-        return 4;
-      case ClassicFinishType.elden:
-        return 4;
-      case ClassicFinishType.ciftten:
-        return 4;
-      case ClassicFinishType.eldenOkey:
-        return 6;
-      case ClassicFinishType.okeyIleCiftten:
-        return 8;
-    }
-  }
+  int get basePenalty => switch (this) {
+    ClassicFinishType.normal => 2,
+    ClassicFinishType.cifte  => 4,
+  };
 }
 
 extension Okey101FinishTypeLabel on Okey101FinishType {

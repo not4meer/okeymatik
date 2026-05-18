@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/strings.dart';
@@ -18,6 +19,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   bool _sending = false;
+  bool _offline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Connectivity().onConnectivityChanged.listen((results) {
+      final offline = results.every((r) => r == ConnectivityResult.none);
+      if (mounted && offline != _offline) setState(() => _offline = offline);
+    });
+  }
 
   @override
   void dispose() {
@@ -51,6 +62,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
+          if (_offline)
+            Container(
+              width: double.infinity,
+              color: Colors.orange.withValues(alpha: 0.15),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Text(
+                    'İnternet bağlantısı yok',
+                    style: const TextStyle(color: Colors.orange, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,

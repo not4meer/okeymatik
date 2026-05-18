@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
+import '../providers/premium_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/analytics_service.dart';
 import '../widgets/complaint_sheet.dart';
 import 'history_screen.dart';
 
@@ -111,6 +113,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             title: s.premiumTitle,
             subtitle: s.premiumSubtitle,
             cta: s.premiumCta,
+            isPremium: ref.watch(premiumProvider),
+            onTap: () async {
+              AnalyticsService.logPremiumTapped();
+              await ref.read(premiumProvider.notifier).activate();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Premium aktif! Reklamlar kaldırıldı.'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 24),
 
@@ -501,71 +516,82 @@ class _PremiumTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final String cta;
+  final bool isPremium;
+  final VoidCallback onTap;
 
   const _PremiumTile({
     required this.title,
     required this.subtitle,
     required this.cta,
+    required this.isPremium,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: 0.15),
-            const Color(0xFF7B2FBE).withValues(alpha: 0.15),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: isPremium ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: isPremium ? 0.08 : 0.15),
+              const Color(0xFF7B2FBE).withValues(alpha: isPremium ? 0.08 : 0.15),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         ),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(10),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isPremium ? Icons.check_circle_rounded : Icons.workspace_premium_rounded,
+                color: AppColors.primary,
+                size: 24,
+              ),
             ),
-            child: const Icon(Icons.workspace_premium_rounded,
-                color: AppColors.primary, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                      color: context.appTextMain, fontSize: 15, fontWeight: FontWeight.w700),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPremium ? 'Premium Aktif' : title,
+                    style: TextStyle(
+                        color: context.appTextMain, fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isPremium ? 'Reklamlar kaldırıldı' : subtitle,
+                    style: TextStyle(color: context.appHint, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            if (!isPremium)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(color: context.appHint, fontSize: 12),
+                child: Text(
+                  cta,
+                  style: const TextStyle(
+                      color: Colors.black, fontSize: 13, fontWeight: FontWeight.w700),
                 ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              cta,
-              style: const TextStyle(
-                  color: Colors.black, fontSize: 13, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
+              ),
+          ],
+        ),
       ),
     );
   }

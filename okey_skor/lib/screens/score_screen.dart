@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
@@ -15,9 +16,11 @@ import '../models/round.dart';
 import '../providers/game_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/live_provider.dart';
+import '../providers/premium_provider.dart';
 import '../providers/settings_provider.dart';
 import '../screens/chat_screen.dart';
 import '../screens/home_screen.dart';
+import '../services/analytics_service.dart';
 import '../widgets/banner_ad.dart';
 import '../widgets/classic_round_sheet.dart';
 import '../widgets/dice_sheet.dart';
@@ -140,7 +143,8 @@ class ScoreScreen extends ConsumerWidget {
         if (limit != null && newElCount == limit && context.mounted) {
           _showRoundLimitReached(context, ref);
         } else if ((roundsBefore + 1) % 2 == 0 && context.mounted) {
-          InterstitialAd.show(context);
+          final isPremium = ref.read(premiumProvider);
+          if (!isPremium) InterstitialAd.show(context);
         }
       }
     });
@@ -154,19 +158,23 @@ class ScoreScreen extends ConsumerWidget {
         backgroundColor: ctx.appSurface,
         title: Text(s.roundLimitTitle,
             style: TextStyle(color: ctx.appTextMain, fontSize: 17)),
-        content: Text(s.roundLimitContent,
-            style: TextStyle(color: ctx.appSubtext)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(s.roundLimitNo,
-                style: TextStyle(color: ctx.appHint)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(s.roundLimitYes),
-          ),
-        ],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(s.roundLimitContent, style: TextStyle(color: ctx.appSubtext)),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(s.roundLimitYes),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(s.roundLimitNo),
+            ),
+          ],
+        ),
       ),
     ).then((confirmed) {
       if (confirmed != true || !context.mounted) return;
@@ -177,7 +185,10 @@ class ScoreScreen extends ConsumerWidget {
   void _finishGame(BuildContext context, WidgetRef ref) {
     final s = ref.read(stringsProvider);
     final session = ref.read(gameSessionProvider)!;
+    final roundCount = session.rounds.where((r) => r.label != 'Ceza').length;
     ref.read(historyProvider.notifier).saveGame(session);
+    ref.read(settingsProvider.notifier).incrementCompletedGames();
+    AnalyticsService.logGameCompleted(session.gameType.name, roundCount);
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -189,10 +200,10 @@ class ScoreScreen extends ConsumerWidget {
       final settings = ref.read(settingsProvider);
       if (settings.shouldShowRating && context.mounted) {
         ref.read(settingsProvider.notifier).markRatingShown();
-        await showDialog<void>(
-          context: context,
-          builder: (_) => _RatingDialog(s: s),
-        );
+        final review = InAppReview.instance;
+        if (await review.isAvailable()) {
+          await review.requestReview();
+        }
       }
       if (!context.mounted) return;
       Navigator.pushAndRemoveUntil(
@@ -842,14 +853,17 @@ class _TotalRow extends StatelessWidget {
           ),
           ...() {
             final totals = columns.map((c) => c.totalFor(players)).toList();
-            final minTotal = totals.isEmpty ? 0 : totals.reduce((a, b) => a < b ? a : b);
+            final isClassic = gameType == GameType.classicOkey;
+            final leaderTotal = totals.isEmpty ? 0 : isClassic
+                ? totals.reduce((a, b) => a > b ? a : b)
+                : totals.reduce((a, b) => a < b ? a : b);
             return columns.map((c) {
               final total = c.totalFor(players);
               Color scoreColor;
               if (hidden) {
                 scoreColor = context.appHint;
-              } else if (total == minTotal) {
-                scoreColor = const Color(0xFF2E7D32);
+              } else if (total == leaderTotal) {
+                scoreColor = AppColors.siler;
               } else {
                 scoreColor = context.appTextMain;
               }
@@ -1067,48 +1081,6 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-// ── Rating dialog ─────────────────────────────────────────
-
-class _RatingDialog extends StatelessWidget {
-  final AppStrings s;
-  const _RatingDialog({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: context.appSurface,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.star_rounded, color: AppColors.primary, size: 48),
-          const SizedBox(height: 12),
-          Text(
-            s.ratingQuestion,
-            style: TextStyle(color: context.appTextMain, fontSize: 16, fontWeight: FontWeight.w700),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            s.ratingSubtext,
-            style: TextStyle(color: context.appSubtext, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(s.later, style: TextStyle(color: context.appHint)),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(s.rate,
-              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
-        ),
-      ],
-    );
-  }
-}
 
 // ── Game summary dialog ──────────────────────────────────
 
@@ -1156,6 +1128,7 @@ class _SummaryDialogState extends State<_SummaryDialog> {
         xFile = XFile(file.path);
       }
       await Share.shareXFiles([xFile], text: 'Okeymatik');
+      AnalyticsService.logScreenshotTaken();
     } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
@@ -1173,7 +1146,8 @@ class _SummaryDialogState extends State<_SummaryDialog> {
     final columns = _buildColumns(widget.session, _colors);
     final sorted = [...columns]
       ..sort((a, b) => a.totalFor(widget.session.players).compareTo(b.totalFor(widget.session.players)));
-    final winner = sorted.first;
+    final isClassic = widget.session.gameType == GameType.classicOkey;
+    final winner = isClassic ? sorted.last : sorted.first;
     final roundCount = widget.session.rounds.where((r) => r.label != 'Ceza').length;
 
     return AlertDialog(
@@ -1317,7 +1291,8 @@ class _ResultCard extends StatelessWidget {
     final sorted = [...cols]
       ..sort((a, b) =>
           a.totalFor(session.players).compareTo(b.totalFor(session.players)));
-    final winner = sorted.first;
+    final isClassicReceipt = session.gameType == GameType.classicOkey;
+    final winner = isClassicReceipt ? sorted.last : sorted.first;
     final gameLabel =
         session.gameType == GameType.okey101 ? 'Okey 101' : 'Klasik Okey';
     final masaNo =

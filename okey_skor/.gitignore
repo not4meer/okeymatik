@@ -46,3 +46,12 @@ app.*.map.json
 
 # API keys - do not commit
 lib/core/config.dart
+
+# Android signing - never commit
+android/key.properties
+*.jks
+*.keystore
+
+# dart-define secrets
+dart_defines.json
+dart_defines*.json

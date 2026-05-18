@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../models/game_enums.dart';
 import '../core/config.dart';
+import 'analytics_service.dart';
 
 class ChatService {
   String? _rulesContext;
@@ -54,6 +55,8 @@ class ChatService {
       await _saveFeedback(question);
       return feedbackResponse();
     }
+
+    AnalyticsService.logHakemQueried();
 
     final isEn = language == 'en';
 

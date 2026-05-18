@@ -121,10 +121,10 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1,
+              crossAxisCount: 4,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.4,
             ),
             itemCount: 13,
             itemBuilder: (_, i) {
@@ -134,7 +134,7 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: context.appCard,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: context.appMuted),
                   ),
                   child: Center(
@@ -142,7 +142,7 @@ class _TileCalculatorSheetState extends State<TileCalculatorSheet> {
                       '$val',
                       style: TextStyle(
                         color: context.appTextMain,
-                        fontSize: 16,
+                        fontSize: 22,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
