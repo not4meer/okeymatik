@@ -53,8 +53,14 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
   DatabaseReference? _roomRef;
   StreamSubscription<DatabaseEvent>? _sub;
 
-  bool get _firebaseReady =>
-      !kIsWeb && Firebase.apps.isNotEmpty;
+  static const _dbUrl =
+      'https://okeymatik-1d379-default-rtdb.europe-west1.firebasedatabase.app';
+
+  bool get _firebaseReady => Firebase.apps.isNotEmpty;
+
+  DatabaseReference _ref(String path) =>
+      FirebaseDatabase.instanceFor(app: Firebase.app(), databaseURL: _dbUrl)
+          .ref(path);
 
   String _generateCode() {
     final rand = Random();
@@ -72,19 +78,27 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
     return v;
   }
 
-  /// Creates a room, returns the 6-digit code.
-  Future<String> createRoom(GameSession session) async {
-    if (!_firebaseReady) return '------';
+  /// Creates a room, returns the 6-digit code or null on error.
+  Future<String?> createRoom(GameSession session) async {
+    if (!_firebaseReady) {
+      state = state.copyWith(error: 'Firebase bağlantısı yok');
+      return null;
+    }
 
     final code = _generateCode();
-    _roomRef = FirebaseDatabase.instance.ref('rooms/$code');
-
-    final data = {
-      ...session.toJson(),
-      'isActive': true,
-      'lastUpdated': ServerValue.timestamp,
-    };
-    await _roomRef!.set(data);
+    try {
+      _roomRef = _ref('rooms/$code');
+      final data = {
+        ...session.toJson(),
+        'isActive': true,
+        'lastUpdated': ServerValue.timestamp,
+      };
+      await _roomRef!.set(data);
+    } catch (e) {
+      _roomRef = null;
+      state = state.copyWith(error: 'Oda oluşturulamadı: $e');
+      return null;
+    }
 
     state = state.copyWith(
       role: LiveRole.host,
@@ -110,7 +124,7 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
   Future<String?> joinRoom(String code) async {
     if (!_firebaseReady) return 'Firebase bu platformda kullanılamıyor';
 
-    final ref = FirebaseDatabase.instance.ref('rooms/$code');
+    final ref = _ref('rooms/$code');
     DatabaseEvent snap;
     try {
       snap = await ref.once();

@@ -87,11 +87,11 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                       decoration: BoxDecoration(
                         color: isWinner
-                            ? AppColors.primary.withValues(alpha: 0.1)
+                            ? context.appPrimary.withValues(alpha: 0.1)
                             : context.appCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isWinner ? AppColors.primary : color.withValues(alpha: 0.25),
+                          color: isWinner ? context.appPrimary : color.withValues(alpha: 0.25),
                           width: isWinner ? 2 : 1,
                         ),
                       ),
@@ -124,7 +124,7 @@ class _ClassicRoundSheetState extends ConsumerState<ClassicRoundSheet> {
                           Text(
                             isWinner ? '★ ${s.winnerLabel}' : '${s.winnerLabel}?',
                             style: TextStyle(
-                              color: isWinner ? AppColors.primary : context.appDim,
+                              color: isWinner ? context.appPrimary : context.appDim,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                             ),

@@ -207,17 +207,17 @@ class _Chip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withValues(alpha: 0.2)
+              ? context.appPrimary.withValues(alpha: 0.2)
               : context.appCard,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: selected ? AppColors.primary : context.appMuted, width: 1.5),
+              color: selected ? context.appPrimary : context.appMuted, width: 1.5),
         ),
         child: Center(
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? AppColors.primary : context.appSubtext,
+              color: selected ? context.appPrimary : context.appSubtext,
               fontWeight: FontWeight.w600,
               fontSize: 15,
             ),

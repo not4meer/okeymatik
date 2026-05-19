@@ -77,7 +77,17 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(stringsProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = context.appPrimary;
+    final diceBodyColor = context.isGirls
+        ? const Color(0xFF3A1540)
+        : context.isLight
+            ? Colors.white
+            : const Color(0xFF252040);
+    final dotRestColor = context.isGirls
+        ? const Color(0xFFFF66C4)
+        : context.isLight
+            ? const Color(0xFF0D1F3C)
+            : const Color(0xFFF0F4FF);
 
     return Container(
       decoration: BoxDecoration(
@@ -119,17 +129,17 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
                 width: 112,
                 height: 112,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF252040) : Colors.white,
+                  color: diceBodyColor,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: _rolling
-                        ? AppColors.primary
-                        : AppColors.primary.withValues(alpha: 0.25),
+                        ? primary
+                        : primary.withValues(alpha: 0.25),
                     width: _rolling ? 2.5 : 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: _rolling ? 0.35 : 0.12),
+                      color: primary.withValues(alpha: _rolling ? 0.35 : 0.12),
                       blurRadius: _rolling ? 32 : 14,
                       spreadRadius: _rolling ? 4 : 1,
                     ),
@@ -139,9 +149,7 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
                   padding: const EdgeInsets.all(16),
                   child: _DiceFace(
                     value: _value,
-                    dotColor: _rolling
-                        ? AppColors.primary
-                        : (isDark ? const Color(0xFFF0F4FF) : const Color(0xFF0D1F3C)),
+                    dotColor: _rolling ? primary : dotRestColor,
                   ),
                 ),
               ),
@@ -154,7 +162,7 @@ class _DiceSheetState extends ConsumerState<DiceSheet>
               _rolling ? s.rolling : s.tapToRoll,
               key: ValueKey(_rolling),
               style: TextStyle(
-                color: _rolling ? AppColors.primary : context.appHint,
+                color: _rolling ? primary : context.appHint,
                 fontSize: 13,
                 fontWeight: _rolling ? FontWeight.w600 : FontWeight.normal,
               ),

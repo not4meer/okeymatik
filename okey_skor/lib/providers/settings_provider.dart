@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/strings.dart';
+import '../core/theme.dart';
 import 'game_provider.dart';
 
 class AppSettings {
   final String username;
   final String playerId;
-  final ThemeMode themeMode;
+  final AppTheme appTheme;
   final String language;
   final int firstLaunchTimestamp;
   final bool ratingShown;
@@ -17,12 +18,16 @@ class AppSettings {
   const AppSettings({
     required this.username,
     required this.playerId,
-    required this.themeMode,
+    required this.appTheme,
     required this.language,
     required this.firstLaunchTimestamp,
     required this.ratingShown,
     required this.completedGamesCount,
   });
+
+  // Flutter ThemeMode for MaterialApp.themeMode
+  ThemeMode get themeMode =>
+      appTheme == AppTheme.light ? ThemeMode.light : ThemeMode.dark;
 
   bool get isFirstLaunch => username.isEmpty;
 
@@ -31,7 +36,7 @@ class AppSettings {
   AppSettings copyWith({
     String? username,
     String? playerId,
-    ThemeMode? themeMode,
+    AppTheme? appTheme,
     String? language,
     int? firstLaunchTimestamp,
     bool? ratingShown,
@@ -40,7 +45,7 @@ class AppSettings {
     return AppSettings(
       username: username ?? this.username,
       playerId: playerId ?? this.playerId,
-      themeMode: themeMode ?? this.themeMode,
+      appTheme: appTheme ?? this.appTheme,
       language: language ?? this.language,
       firstLaunchTimestamp: firstLaunchTimestamp ?? this.firstLaunchTimestamp,
       ratingShown: ratingShown ?? this.ratingShown,
@@ -72,7 +77,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   SettingsNotifier(this._prefs) : super(const AppSettings(
     username: '',
     playerId: '',
-    themeMode: ThemeMode.dark,
+    appTheme: AppTheme.dark,
     language: 'tr',
     firstLaunchTimestamp: 0,
     ratingShown: false,
@@ -89,7 +94,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       _prefs.setString(_keyPlayerId, playerId);
     }
     final themeStr = _prefs.getString(_keyTheme) ?? 'dark';
-    final themeMode = themeStr == 'light' ? ThemeMode.light : ThemeMode.dark;
+    final appTheme = switch (themeStr) {
+      'light' => AppTheme.light,
+      'girls' => AppTheme.girls,
+      _ => AppTheme.dark,
+    };
     final language = _prefs.getString(_keyLanguage) ?? 'tr';
 
     var firstLaunchTs = _prefs.getInt(_keyFirstLaunch) ?? 0;
@@ -103,7 +112,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     state = AppSettings(
       username: username,
       playerId: playerId,
-      themeMode: themeMode,
+      appTheme: appTheme,
       language: language,
       firstLaunchTimestamp: firstLaunchTs,
       ratingShown: ratingShown,
@@ -124,9 +133,19 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     state = state.copyWith(username: trimmed);
   }
 
+  void setTheme(AppTheme theme) {
+    final str = switch (theme) {
+      AppTheme.light => 'light',
+      AppTheme.girls => 'girls',
+      AppTheme.dark => 'dark',
+    };
+    _prefs.setString(_keyTheme, str);
+    state = state.copyWith(appTheme: theme);
+  }
+
+  // Backward-compat wrapper
   void setThemeMode(ThemeMode mode) {
-    _prefs.setString(_keyTheme, mode == ThemeMode.light ? 'light' : 'dark');
-    state = state.copyWith(themeMode: mode);
+    setTheme(mode == ThemeMode.light ? AppTheme.light : AppTheme.dark);
   }
 
   void setLanguage(String lang) {

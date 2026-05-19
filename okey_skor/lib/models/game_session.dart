@@ -71,8 +71,8 @@ class GameSession {
         id: json['id'] as String,
         gameType: GameType.values.firstWhere((e) => e.name == json['gameType']),
         gameMode: GameMode.values.firstWhere((e) => e.name == json['gameMode']),
-        players: (json['players'] as List).map((e) => Player.fromJson(e as Map<String, dynamic>)).toList(),
-        rounds: (json['rounds'] as List).map((e) => RoundScore.fromJson(e as Map<String, dynamic>)).toList(),
+        players: (json['players'] as List? ?? []).map((e) => Player.fromJson(e as Map<String, dynamic>)).toList(),
+        rounds: (json['rounds'] as List? ?? []).map((e) => RoundScore.fromJson(e as Map<String, dynamic>)).toList(),
         pairs: (json['pairs'] as List? ?? []).map((p) => List<int>.from(p as List)).toList(),
         totalRounds: json['totalRounds'] as int?,
       );

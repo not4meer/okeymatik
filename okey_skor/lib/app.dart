@@ -25,12 +25,14 @@ class OkeySkorApp extends ConsumerWidget {
       afterSplash = const HomeScreen();
     }
 
+    final appTheme = settings.appTheme;
+
     return MaterialApp(
       title: 'Okeymatik',
       debugShowCheckedModeBanner: false,
       themeMode: settings.themeMode,
       theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
+      darkTheme: appTheme == AppTheme.girls ? buildGirlsTheme() : buildDarkTheme(),
       home: SplashScreen(afterSplash: afterSplash),
     );
   }

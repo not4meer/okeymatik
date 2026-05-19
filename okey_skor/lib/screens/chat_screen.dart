@@ -47,7 +47,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.chat_bubble_rounded, color: AppColors.primary, size: 18),
+            Icon(Icons.chat_bubble_rounded, color: context.appPrimary, size: 18),
             const SizedBox(width: 8),
             Text(s.chatTitle),
           ],
@@ -139,7 +139,7 @@ class _MessageBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isUser
-              ? AppColors.primary.withValues(alpha: 0.2)
+              ? context.appPrimary.withValues(alpha: 0.2)
               : context.appCard,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(14),
@@ -148,13 +148,13 @@ class _MessageBubble extends StatelessWidget {
             bottomRight: Radius.circular(isUser ? 4 : 14),
           ),
           border: isUser
-              ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+              ? Border.all(color: context.appPrimary.withValues(alpha: 0.3))
               : null,
         ),
         child: Text(
           msg.text,
           style: TextStyle(
-            color: isUser ? AppColors.primary : context.appTextMain,
+            color: isUser ? context.appPrimary : context.appTextMain,
             fontSize: 14,
             height: 1.45,
           ),
@@ -255,7 +255,7 @@ class _InputBar extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: sending ? context.appMuted : AppColors.primary,
+              color: sending ? context.appMuted : context.appPrimary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(

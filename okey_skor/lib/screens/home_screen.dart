@@ -18,6 +18,7 @@ class HomeScreen extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final s = ref.watch(stringsProvider);
     final username = settings.username;
+    final primary = context.appPrimary;
 
     return Scaffold(
       body: SafeArea(
@@ -41,7 +42,7 @@ class HomeScreen extends ConsumerWidget {
                           shape: BoxShape.circle,
                           color: context.appCard,
                           border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                              color: primary.withValues(alpha: 0.4), width: 1.5),
                         ),
                         child: Center(
                           child: username.isNotEmpty
@@ -53,10 +54,10 @@ class HomeScreen extends ConsumerWidget {
                                           w.isNotEmpty ? w[0].toUpperCase() : '')
                                       .take(2)
                                       .join(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w800,
-                                    color: AppColors.primary,
+                                    color: primary,
                                   ),
                                 )
                               : Icon(Icons.person_rounded,
@@ -74,15 +75,10 @@ class HomeScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
-              ),
+
+              // Logo with theme-aware glow
+              _LogoGlow(primary: primary),
+
               const SizedBox(height: 20),
               Text(
                 'Okeymatik',
@@ -100,42 +96,60 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _GameCard(
                 title: s.classicOkey,
-                iconWidget: const _TileIcon(
-                  labels: ['6', '7'],
-                  tileColors: [Color(0xFF111827), Color(0xFFDC2626)],
+                iconWidget: _TileIcon(
+                  labels: const ['6', '7'],
+                  tileColors: context.isGirls
+                      ? const [Color(0xFFCC44AA), Color(0xFFFF66C4)]
+                      : const [Color(0xFF111827), Color(0xFFDC2626)],
                 ),
-                color: AppColors.primary,
+                color: primary,
                 onTap: () => _navigate(context, GameType.classicOkey),
               ),
               const SizedBox(height: 14),
               _GameCard(
                 title: 'Okey 101',
-                iconWidget: const _TileIcon(
-                  labels: ['1', '0', '1'],
-                  tileColors: [AppColors.primary, AppColors.primary, AppColors.primary],
+                iconWidget: _TileIcon(
+                  labels: const ['1', '0', '1'],
+                  tileColors: [primary, primary, primary],
                 ),
-                color: AppColors.primary,
+                color: primary,
                 onTap: () => _navigate(context, GameType.okey101),
               ),
               const SizedBox(height: 20),
+
+              // Live room card
               GestureDetector(
                 onTap: () => _joinLive(context, ref, s),
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   decoration: BoxDecoration(
                     color: context.appCard,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: context.appMuted),
+                    border: Border.all(
+                      color: context.isGirls
+                          ? primary.withValues(alpha: 0.35)
+                          : context.appMuted,
+                    ),
+                    boxShadow: context.isGirls
+                        ? [
+                            BoxShadow(
+                              color: primary.withValues(alpha: 0.08),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            )
+                          ]
+                        : null,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.wifi_rounded, color: context.appHint, size: 18),
+                      Icon(Icons.wifi_rounded, color: context.isGirls ? primary : context.appHint, size: 18),
                       const SizedBox(width: 10),
                       Text(s.joinLive,
                           style: TextStyle(
-                              color: context.appSubtext,
+                              color: context.isGirls ? primary : context.appSubtext,
                               fontSize: 14,
                               fontWeight: FontWeight.w600)),
                     ],
@@ -229,7 +243,6 @@ class HomeScreen extends ConsumerWidget {
                     }
                   },
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: Text(s.join),
@@ -239,6 +252,39 @@ class HomeScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+// Logo + glow
+class _LogoGlow extends StatelessWidget {
+  final Color primary;
+  const _LogoGlow({required this.primary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: context.isLight
+            ? null
+            : [
+                BoxShadow(
+                  color: primary.withValues(alpha: context.isGirls ? 0.45 : 0.28),
+                  blurRadius: context.isGirls ? 36 : 28,
+                  spreadRadius: context.isGirls ? 6 : 3,
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Image.asset(
+          context.isGirls ? 'assets/images/logo.pink.png' : 'assets/images/logo.png',
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+        ),
+      ),
     );
   }
 }
@@ -258,57 +304,77 @@ class _GameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: context.appCard,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      decoration: BoxDecoration(
+        color: context.appCard,
         borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      color.withValues(alpha: 0.25),
-                      color.withValues(alpha: 0.10),
-                    ],
+        border: context.isGirls
+            ? Border.all(color: color.withValues(alpha: 0.30), width: 1)
+            : null,
+        boxShadow: context.isGirls
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.10),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                )
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        color.withValues(alpha: 0.25),
+                        color.withValues(alpha: 0.10),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: color.withValues(alpha: 0.30),
+                      width: 1,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: color.withValues(alpha: 0.30),
-                    width: 1,
+                  child: Center(child: iconWidget),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: context.appTextMain,
+                    ),
                   ),
                 ),
-                child: Center(child: iconWidget),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: context.appTextMain,
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  child: Icon(Icons.chevron_right_rounded, color: color, size: 18),
                 ),
-              ),
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(Icons.chevron_right_rounded, color: color, size: 18),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -316,7 +382,6 @@ class _GameCard extends StatelessWidget {
   }
 }
 
-// Okey taşı ikonları — beyaz arka plan üzerine renkli sayı
 class _TileIcon extends StatelessWidget {
   final List<String> labels;
   final List<Color> tileColors;

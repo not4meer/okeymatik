@@ -137,8 +137,8 @@ class _HistoryCard extends StatelessWidget {
                         style: TextStyle(color: context.appHint, fontSize: 12)),
                   ),
                   if (isWinner) ...[
-                    const Icon(Icons.emoji_events_rounded,
-                        size: 14, color: AppColors.primary),
+                    Icon(Icons.emoji_events_rounded,
+                        size: 14, color: context.appPrimary),
                     const SizedBox(width: 4),
                   ] else
                     const SizedBox(width: 18),
@@ -146,7 +146,7 @@ class _HistoryCard extends StatelessWidget {
                     child: Text(
                       r.name,
                       style: TextStyle(
-                        color: isWinner ? AppColors.primary : color,
+                        color: isWinner ? context.appPrimary : color,
                         fontSize: 13,
                         fontWeight: isWinner ? FontWeight.w700 : FontWeight.w500,
                       ),

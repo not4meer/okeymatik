@@ -54,7 +54,10 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
           'service_id': AppConfig.emailjsServiceId,
           'template_id': AppConfig.emailjsTemplateId,
           'user_id': AppConfig.emailjsPublicKey,
-          'template_params': {'message': text},
+          'template_params': {
+            'message': text,
+            'to_email': 'ameerkhn86@gmail.com',
+          },
         }),
       ).timeout(const Duration(seconds: 15));
       success = response.statusCode == 200;

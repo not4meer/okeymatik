@@ -102,18 +102,18 @@ class SheetTypeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary.withValues(alpha: 0.2)
+              ? context.appPrimary.withValues(alpha: 0.2)
               : context.appCard,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? AppColors.primary : context.appMuted,
+            color: selected ? context.appPrimary : context.appMuted,
             width: 1.5,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? AppColors.primary : context.appSubtext,
+            color: selected ? context.appPrimary : context.appSubtext,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -172,15 +172,15 @@ class SheetPreviewBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.appCard,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: context.appPrimary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$previewLabel: ${round.label}',
-            style: const TextStyle(
-              color: AppColors.primary,
+            style: TextStyle(
+              color: context.appPrimary,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),

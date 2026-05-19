@@ -40,7 +40,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final s = ref.watch(stringsProvider);
-    final isDark = settings.themeMode == ThemeMode.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -87,15 +86,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           _SectionHeader(s.appearance),
           const SizedBox(height: 10),
-          _ThemeTile(
-            isDark: isDark,
+          _ThemeSelector(
+            current: settings.appTheme,
             darkLabel: s.darkTheme,
             lightLabel: s.lightTheme,
-            onToggle: (v) {
-              ref.read(settingsProvider.notifier).setThemeMode(
-                    v ? ThemeMode.dark : ThemeMode.light,
-                  );
-            },
+            girlsLabel: s.girlsMode,
+            onSelect: (t) => ref.read(settingsProvider.notifier).setTheme(t),
           ),
           const SizedBox(height: 24),
 
@@ -206,14 +202,16 @@ class _AvatarSection extends StatelessWidget {
           height: 88,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, Color(0xFF00A478)],
+            gradient: LinearGradient(
+              colors: context.isGirls
+                  ? [const Color(0xFFFF66C4), const Color(0xFFFFAADD)]
+                  : [AppColors.primary, const Color(0xFF00A478)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
+                color: context.appPrimary.withValues(alpha: 0.35),
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -255,7 +253,7 @@ class _AvatarSection extends StatelessWidget {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                      borderSide: BorderSide(color: context.appPrimary, width: 2),
                     ),
                     filled: true,
                     fillColor: context.appCard,
@@ -269,11 +267,11 @@ class _AvatarSection extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: context.appPrimary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child:
-                      const Icon(Icons.check_rounded, color: AppColors.primary, size: 20),
+                      Icon(Icons.check_rounded, color: context.appPrimary, size: 20),
                 ),
               ),
               const SizedBox(width: 4),
@@ -331,12 +329,12 @@ class _AvatarSection extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.tag, size: 13, color: AppColors.primary),
+                Icon(Icons.tag, size: 13, color: context.appPrimary),
                 const SizedBox(width: 4),
                 Text(
                   playerId,
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.appPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.5,
@@ -396,7 +394,7 @@ class _SettingsTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.primary, size: 20),
+              Icon(icon, color: context.appPrimary, size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -419,30 +417,78 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-class _ThemeTile extends StatelessWidget {
-  final bool isDark;
+class _ThemeSelector extends StatelessWidget {
+  final AppTheme current;
   final String darkLabel;
   final String lightLabel;
-  final ValueChanged<bool> onToggle;
+  final String girlsLabel;
+  final ValueChanged<AppTheme> onSelect;
 
-  const _ThemeTile({
-    required this.isDark,
+  const _ThemeSelector({
+    required this.current,
     required this.darkLabel,
     required this.lightLabel,
-    required this.onToggle,
+    required this.girlsLabel,
+    required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
-    return _SettingsTile(
-      icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-      label: isDark ? darkLabel : lightLabel,
-      trailing: Switch(
-        value: isDark,
-        onChanged: onToggle,
-        activeThumbColor: AppColors.primary,
+    final themes = [
+      (AppTheme.dark, Icons.dark_mode_rounded, darkLabel),
+      (AppTheme.light, Icons.light_mode_rounded, lightLabel),
+      (AppTheme.girls, Icons.favorite_rounded, girlsLabel),
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appCard,
+        borderRadius: BorderRadius.circular(14),
       ),
-      onTap: () => onToggle(!isDark),
+      padding: const EdgeInsets.all(6),
+      child: Row(
+        children: themes.map((t) {
+          final (theme, icon, label) = t;
+          final sel = current == theme;
+          final accent = theme == AppTheme.girls
+              ? AppColors.girlsPrimary
+              : context.appPrimary;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onSelect(theme),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: sel ? accent.withValues(alpha: 0.18) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: sel ? accent : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon,
+                        color: sel ? accent : context.appHint, size: 20),
+                    const SizedBox(height: 5),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: sel ? accent : context.appSubtext,
+                        fontSize: 11,
+                        fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -494,14 +540,14 @@ class _LangBtn extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary.withValues(alpha: 0.15) : Colors.transparent,
+            color: selected ? context.appPrimary.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: selected ? AppColors.primary : context.appHint,
+              color: selected ? context.appPrimary : context.appHint,
               fontSize: 14,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
@@ -536,26 +582,26 @@ class _PremiumTile extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppColors.primary.withValues(alpha: isPremium ? 0.08 : 0.15),
+              context.appPrimary.withValues(alpha: isPremium ? 0.08 : 0.15),
               const Color(0xFF7B2FBE).withValues(alpha: isPremium ? 0.08 : 0.15),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+          border: Border.all(color: context.appPrimary.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: context.appPrimary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 isPremium ? Icons.check_circle_rounded : Icons.workspace_premium_rounded,
-                color: AppColors.primary,
+                color: context.appPrimary,
                 size: 24,
               ),
             ),
@@ -581,7 +627,7 @@ class _PremiumTile extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: context.appPrimary,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

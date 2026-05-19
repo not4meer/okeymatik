@@ -280,6 +280,7 @@ class ScoreScreen extends ConsumerWidget {
       showModalBottomSheet<void>(
         context: context,
         backgroundColor: context.appSurface,
+        isScrollControlled: true,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         builder: (ctx) => _LiveHostSheet(
           roomCode: live.roomCode!,
@@ -300,22 +301,27 @@ class ScoreScreen extends ConsumerWidget {
           onStart: () async {
             Navigator.pop(ctx);
             final code = await ref.read(liveProvider.notifier).createRoom(session);
-            if (context.mounted) {
-              showModalBottomSheet<void>(
-                context: context,
-                backgroundColor: context.appSurface,
-                shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-                builder: (ctx2) => _LiveHostSheet(
-                  roomCode: code,
-                  s: s,
-                  onStop: () async {
-                    await ref.read(liveProvider.notifier).leaveRoom();
-                    if (ctx2.mounted) Navigator.pop(ctx2);
-                  },
-                ),
-              );
+            if (!context.mounted) return;
+            if (code == null) {
+              final err = ref.read(liveProvider).error ?? 'Bağlantı hatası';
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+              return;
             }
+            showModalBottomSheet<void>(
+              context: context,
+              backgroundColor: context.appSurface,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+              builder: (ctx2) => _LiveHostSheet(
+                roomCode: code,
+                s: s,
+                onStop: () async {
+                  await ref.read(liveProvider.notifier).leaveRoom();
+                  if (ctx2.mounted) Navigator.pop(ctx2);
+                },
+              ),
+            );
           },
         ),
       );
@@ -729,9 +735,9 @@ class _TableHeader extends StatelessWidget {
                     child: Container(
                       width: 5,
                       height: 5,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.primary,
+                        color: context.appPrimary,
                       ),
                     ),
                   ),
@@ -854,15 +860,17 @@ class _TotalRow extends StatelessWidget {
           ...() {
             final totals = columns.map((c) => c.totalFor(players)).toList();
             final isClassic = gameType == GameType.classicOkey;
-            final leaderTotal = totals.isEmpty ? 0 : isClassic
+            final leaderTotal = totals.isEmpty ? null : isClassic
                 ? totals.reduce((a, b) => a > b ? a : b)
                 : totals.reduce((a, b) => a < b ? a : b);
+            final hasUniqueLeader = leaderTotal != null &&
+                totals.where((t) => t == leaderTotal).length == 1;
             return columns.map((c) {
               final total = c.totalFor(players);
               Color scoreColor;
               if (hidden) {
                 scoreColor = context.appHint;
-              } else if (total == leaderTotal) {
+              } else if (hasUniqueLeader && total == leaderTotal) {
                 scoreColor = AppColors.siler;
               } else {
                 scoreColor = context.appTextMain;
@@ -974,7 +982,7 @@ class _BottomBar extends StatelessWidget {
                               key: ValueKey(dealerName),
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: AppColors.primary
+                                color: context.appPrimary
                                     .withValues(alpha: 0.85),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -1068,7 +1076,7 @@ class _IconBtn extends StatelessWidget {
               color: context.appCard,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color ?? AppColors.primary, size: iconSz),
+            child: Icon(icon, color: color ?? context.appPrimary, size: iconSz),
           ),
           const SizedBox(height: 3),
           Text(
@@ -1161,19 +1169,19 @@ class _SummaryDialogState extends State<_SummaryDialog> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.appPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              border: Border.all(color: context.appPrimary.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.emoji_events_rounded, color: AppColors.primary, size: 22),
+                Icon(Icons.emoji_events_rounded, color: context.appPrimary, size: 22),
                 const SizedBox(width: 8),
                 Text(
                   s.won(winner.name),
-                  style: const TextStyle(
-                      color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: context.appPrimary, fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
@@ -1824,7 +1832,7 @@ class _LiveStartSheet extends StatelessWidget {
                 icon: const Icon(Icons.wifi_rounded, size: 18),
                 label: Text(s.startLive),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: context.appPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
@@ -1854,45 +1862,79 @@ class _LiveHostSheet extends StatelessWidget {
               children: [
                 const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
                 const SizedBox(width: 8),
-                Text(s.liveActive,
-                    style: const TextStyle(
-                        color: Colors.greenAccent, fontSize: 15, fontWeight: FontWeight.w700)),
+                Expanded(
+                  child: Text(s.liveActive,
+                      style: const TextStyle(
+                          color: Colors.greenAccent, fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+                IconButton(
+                  icon: Icon(Icons.close_rounded, color: context.appHint, size: 22),
+                  onPressed: () => Navigator.pop(context),
+                  tooltip: 'Kapat',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
               ],
             ),
             const SizedBox(height: 20),
             Text(s.roomCodeLabel,
                 style: TextStyle(color: context.appHint, fontSize: 12, letterSpacing: 1)),
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-              decoration: BoxDecoration(
-                color: context.appCard,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                roomCode,
-                style: TextStyle(
-                  color: context.appTextMain,
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 8,
+            GestureDetector(
+              onTap: () {
+                // Copy code on tap
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+                decoration: BoxDecoration(
+                  color: context.appCard,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  roomCode,
+                  style: TextStyle(
+                    color: context.appTextMain,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 8,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 8),
             Text(s.shareRoomCode, style: TextStyle(color: context.appHint, fontSize: 12)),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onStop,
-                icon: const Icon(Icons.wifi_off_rounded, size: 18, color: AppColors.penalty),
-                label: Text(s.stopLive, style: const TextStyle(color: AppColors.penalty)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppColors.penalty.withValues(alpha: 0.4)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+            const SizedBox(height: 16),
+            Text(
+              'Ekranı kapatsan da canlı masa aktif kalır. Wifi ikonuna tekrar basarak kodu görebilirsin.',
+              style: TextStyle(color: context.appDim, fontSize: 11),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: context.appMuted),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text('Kapat', style: TextStyle(color: context.appSubtext)),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onStop,
+                    icon: const Icon(Icons.wifi_off_rounded, size: 18, color: AppColors.penalty),
+                    label: Text(s.stopLive, style: const TextStyle(color: AppColors.penalty)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.penalty.withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

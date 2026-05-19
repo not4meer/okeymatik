@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app.dart';
+import 'firebase_options.dart';
 import 'providers/game_provider.dart';
 import 'services/ads_initializer.dart';
 import 'services/crashlytics_service.dart';
@@ -14,17 +15,19 @@ import 'services/crashlytics_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase: Android uses google-services.json, iOS uses GoogleService-Info.plist
-  if (!kIsWeb) {
-    try {
+  // Firebase: native platforms use config files, web uses DefaultFirebaseOptions
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.web);
+    } else {
       await Firebase.initializeApp();
       await CrashlyticsService.initialize();
       if (CrashlyticsService.onPlatformError != null) {
         PlatformDispatcher.instance.onError = CrashlyticsService.onPlatformError!;
       }
-    } catch (e) {
-      debugPrint('Firebase init failed: $e');
     }
+  } catch (e) {
+    debugPrint('Firebase init failed: $e');
   }
 
   // AdMob (Android & iOS only — web uses stub)

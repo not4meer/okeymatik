@@ -24,6 +24,7 @@ class AppStrings {
   final String appearance;
   final String darkTheme;
   final String lightTheme;
+  final String girlsMode;
   final String language;
   final String premiumTitle;
   final String premiumSubtitle;
@@ -157,6 +158,7 @@ class AppStrings {
     required this.appearance,
     required this.darkTheme,
     required this.lightTheme,
+    required this.girlsMode,
     required this.language,
     required this.premiumTitle,
     required this.premiumSubtitle,
@@ -288,8 +290,9 @@ class AppStrings {
     pastGames: 'Geçmiş Oyunlar',
     viewHistory: 'Oyun Geçmişini Görüntüle',
     appearance: 'Görünüm',
-    darkTheme: 'Koyu Tema',
-    lightTheme: 'Açık Tema',
+    darkTheme: 'Koyu',
+    lightTheme: 'Açık',
+    girlsMode: 'Girls Mode',
     language: 'Dil',
     premiumTitle: 'Premium Üyelik',
     premiumSubtitle: 'Aylık ₺20 — Reklamlarsız deneyim',
@@ -433,8 +436,9 @@ class AppStrings {
     pastGames: 'Past Games',
     viewHistory: 'View Game History',
     appearance: 'Appearance',
-    darkTheme: 'Dark Mode',
-    lightTheme: 'Light Mode',
+    darkTheme: 'Dark',
+    lightTheme: 'Light',
+    girlsMode: 'Girls Mode',
     language: 'Language',
     premiumTitle: 'Premium Membership',
     premiumSubtitle: '₺20 / month — Ad-free experience',
