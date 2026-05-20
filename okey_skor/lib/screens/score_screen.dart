@@ -1924,13 +1924,19 @@ class _LiveHostSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     onPressed: onStop,
-                    icon: const Icon(Icons.wifi_off_rounded, size: 18, color: AppColors.penalty),
-                    label: Text(s.stopLive, style: const TextStyle(color: AppColors.penalty)),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: AppColors.penalty.withValues(alpha: 0.4)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.wifi_off_rounded, size: 18, color: AppColors.penalty),
+                        const SizedBox(width: 6),
+                        Text(s.stopLive, style: const TextStyle(color: AppColors.penalty)),
+                      ],
                     ),
                   ),
                 ),

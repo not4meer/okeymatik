@@ -4,9 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import '../models/game_enums.dart';
 import '../models/game_session.dart';
+import '../models/player.dart';
 import '../models/round.dart';
 import '../providers/live_provider.dart';
 import '../providers/settings_provider.dart';
+import '../widgets/dice_sheet.dart';
+import '../widgets/tile_calculator_sheet.dart';
+import 'chat_screen.dart';
 
 class LiveViewScreen extends ConsumerWidget {
   const LiveViewScreen({super.key});
@@ -56,6 +60,74 @@ class LiveViewScreen extends ConsumerWidget {
         ],
       ),
       body: _LiveScoreTable(session: session, totalLabel: s.total),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          color: context.appSurface,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _ViewerBtn(
+                icon: Icons.casino_rounded,
+                label: 'Zar',
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const DiceSheet(),
+                ),
+              ),
+              _ViewerBtn(
+                icon: Icons.calculate_rounded,
+                label: 'Hesap',
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const TileCalculatorSheet(),
+                ),
+              ),
+              _ViewerBtn(
+                icon: Icons.gavel_rounded,
+                label: 'Hakem',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatScreen()),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _ViewerBtn({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 50,
+            height: 42,
+            decoration: BoxDecoration(
+              color: context.appCard,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: context.appPrimary, size: 24),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(color: context.appHint, fontSize: 11)),
+        ],
+      ),
     );
   }
 }
@@ -114,23 +186,57 @@ class _LiveBadgeState extends State<_LiveBadge> with SingleTickerProviderStateMi
   }
 }
 
+// Display column: handles both individual and paired mode
+class _LiveCol {
+  final String name;
+  final Color color;
+  final List<String> playerIds;
+  const _LiveCol({required this.name, required this.color, required this.playerIds});
+
+  int deltaFor(RoundScore round) =>
+      playerIds.fold(0, (sum, id) => sum + (round.deltas[id] ?? 0));
+
+  int totalFor(GameSession s) => playerIds.fold(0, (sum, id) {
+        final p = s.players.firstWhere((pl) => pl.id == id,
+            orElse: () => const Player(id: '', name: '', totalScore: 0));
+        return sum + p.totalScore;
+      });
+}
+
+List<_LiveCol> _buildLiveCols(GameSession session) {
+  const colors = [Color(0xFF4CAF50), Color(0xFF2196F3), Color(0xFFFF9800), Color(0xFFE91E63)];
+  if (session.gameMode == GameMode.paired && session.pairs.length == 2) {
+    return session.pairs.asMap().entries.map((e) {
+      final pair = e.value;
+      String name = session.players[pair[0]].name;
+      if (name.endsWith(' 1') || name.endsWith(' 2')) {
+        name = name.substring(0, name.length - 2).trim();
+      }
+      return _LiveCol(
+        name: name,
+        color: colors[pair[0] % colors.length],
+        playerIds: pair.map((i) => session.players[i].id).toList(),
+      );
+    }).toList();
+  }
+  return session.players.asMap().entries.map((e) => _LiveCol(
+        name: e.value.name,
+        color: colors[e.key % colors.length],
+        playerIds: [e.value.id],
+      )).toList();
+}
+
 class _LiveScoreTable extends StatelessWidget {
   final GameSession session;
   final String totalLabel;
 
   const _LiveScoreTable({required this.session, required this.totalLabel});
 
-  static const _colors = [
-    Color(0xFF4CAF50),
-    Color(0xFF2196F3),
-    Color(0xFFFF9800),
-    Color(0xFFE91E63),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final players = session.players;
+    final cols = _buildLiveCols(session);
     final rounds = session.rounds;
+    int elCounter = 0;
 
     return Column(
       children: [
@@ -140,20 +246,15 @@ class _LiveScoreTable extends StatelessWidget {
           child: Row(
             children: [
               const SizedBox(width: 44),
-              ...players.asMap().entries.map(
-                    (e) => Expanded(
-                  child: Text(
-                    e.value.name,
-                    style: TextStyle(
-                      color: _colors[e.key % _colors.length],
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+              ...cols.map((c) => Expanded(
+                    child: Text(
+                      c.name,
+                      style: TextStyle(
+                          color: c.color, fontSize: 13, fontWeight: FontWeight.w700),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
+                  )),
             ],
           ),
         ),
@@ -165,10 +266,16 @@ class _LiveScoreTable extends StatelessWidget {
             itemBuilder: (ctx, index) {
               if (index < rounds.length) {
                 final round = rounds[index];
-                final label = round.label.isNotEmpty ? round.label : '${index + 1}.';
-                return _RoundRow(round: round, players: players, label: label);
+                final String label;
+                if (round.label == 'Ceza') {
+                  label = 'Ceza';
+                } else {
+                  elCounter++;
+                  label = 'El $elCounter';
+                }
+                return _LiveRoundRow(round: round, cols: cols, label: label);
               }
-              return _TotalsRow(players: players, totalLabel: totalLabel);
+              return _LiveTotalsRow(cols: cols, session: session, totalLabel: totalLabel);
             },
           ),
         ),
@@ -177,12 +284,12 @@ class _LiveScoreTable extends StatelessWidget {
   }
 }
 
-class _RoundRow extends StatelessWidget {
+class _LiveRoundRow extends StatelessWidget {
   final RoundScore round;
-  final List players;
+  final List<_LiveCol> cols;
   final String label;
 
-  const _RoundRow({required this.round, required this.players, required this.label});
+  const _LiveRoundRow({required this.round, required this.cols, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -192,19 +299,17 @@ class _RoundRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 44,
-            child: Text(label,
-                style: TextStyle(color: context.appHint, fontSize: 11)),
+            child: Text(label, style: TextStyle(color: context.appHint, fontSize: 11)),
           ),
-          ...players.asMap().entries.map((e) {
-            final delta = round.deltas[e.value.id] ?? 0;
+          ...cols.map((c) {
+            final delta = c.deltaFor(round);
             final color = delta == 0
                 ? context.appDim
                 : (delta < 0 ? AppColors.siler : AppColors.penalty);
             return Expanded(
               child: Text(
                 delta == 0 ? '—' : (delta > 0 ? '+$delta' : '$delta'),
-                style:
-                    TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
             );
@@ -215,11 +320,13 @@ class _RoundRow extends StatelessWidget {
   }
 }
 
-class _TotalsRow extends StatelessWidget {
-  final List players;
+class _LiveTotalsRow extends StatelessWidget {
+  final List<_LiveCol> cols;
+  final GameSession session;
   final String totalLabel;
 
-  const _TotalsRow({required this.players, required this.totalLabel});
+  const _LiveTotalsRow(
+      {required this.cols, required this.session, required this.totalLabel});
 
   @override
   Widget build(BuildContext context) {
@@ -239,8 +346,8 @@ class _TotalsRow extends StatelessWidget {
                   letterSpacing: 0.5),
             ),
           ),
-          ...players.map((p) {
-            final total = p.totalScore as int;
+          ...cols.map((c) {
+            final total = c.totalFor(session);
             return Expanded(
               child: Text(
                 total.toString(),
