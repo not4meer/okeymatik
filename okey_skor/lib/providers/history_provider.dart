@@ -52,13 +52,21 @@ class HistoryNotifier extends StateNotifier<List<GameHistoryEntry>> {
 
     results.sort((a, b) => a.score.compareTo(b.score));
 
+    final now = DateTime.now();
+    int? durationMinutes;
+    if (session.startedAt != null) {
+      final diff = now.millisecondsSinceEpoch - session.startedAt!;
+      durationMinutes = (diff / 60000).round().clamp(1, 9999);
+    }
+
     final entry = GameHistoryEntry(
       id: session.id,
-      playedAt: DateTime.now(),
+      playedAt: now,
       gameType: session.gameType,
       gameMode: session.gameMode,
       roundCount: roundCount,
       results: results,
+      durationMinutes: durationMinutes,
     );
 
     final updated = [entry, ...state];

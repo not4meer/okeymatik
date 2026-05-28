@@ -583,7 +583,7 @@ class _PremiumTile extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               context.appPrimary.withValues(alpha: isPremium ? 0.08 : 0.15),
-              const Color(0xFF7B2FBE).withValues(alpha: isPremium ? 0.08 : 0.15),
+              context.appPrimary.withValues(alpha: isPremium ? 0.04 : 0.08),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

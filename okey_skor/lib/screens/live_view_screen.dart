@@ -59,7 +59,7 @@ class LiveViewScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: _LiveScoreTable(session: session, totalLabel: s.total),
+      body: _LiveScoreTable(session: session, totalLabel: s.total, scoresHidden: live.scoresHidden),
       bottomNavigationBar: SafeArea(
         child: Container(
           color: context.appSurface,
@@ -229,8 +229,9 @@ List<_LiveCol> _buildLiveCols(GameSession session) {
 class _LiveScoreTable extends StatelessWidget {
   final GameSession session;
   final String totalLabel;
+  final bool scoresHidden;
 
-  const _LiveScoreTable({required this.session, required this.totalLabel});
+  const _LiveScoreTable({required this.session, required this.totalLabel, required this.scoresHidden});
 
   @override
   Widget build(BuildContext context) {
@@ -275,6 +276,7 @@ class _LiveScoreTable extends StatelessWidget {
                 }
                 return _LiveRoundRow(round: round, cols: cols, label: label);
               }
+              if (scoresHidden) return const SizedBox.shrink();
               return _LiveTotalsRow(cols: cols, session: session, totalLabel: totalLabel);
             },
           ),

@@ -16,6 +16,7 @@ class LiveState {
   final bool isConnected;
   final GameSession? viewerSession;
   final String? error;
+  final bool scoresHidden;
 
   const LiveState({
     this.role = LiveRole.none,
@@ -23,6 +24,7 @@ class LiveState {
     this.isConnected = false,
     this.viewerSession,
     this.error,
+    this.scoresHidden = false,
   });
 
   bool get isActive => role != LiveRole.none;
@@ -33,6 +35,7 @@ class LiveState {
     bool? isConnected,
     GameSession? viewerSession,
     String? error,
+    bool? scoresHidden,
     bool clearError = false,
     bool clearAll = false,
   }) {
@@ -43,6 +46,7 @@ class LiveState {
       isConnected: isConnected ?? this.isConnected,
       viewerSession: viewerSession ?? this.viewerSession,
       error: clearError ? null : (error ?? this.error),
+      scoresHidden: scoresHidden ?? this.scoresHidden,
     );
   }
 }
@@ -56,11 +60,17 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
   static const _dbUrl =
       'https://okeymatik-1d379-default-rtdb.europe-west1.firebasedatabase.app';
 
+  static FirebaseDatabase? _dbInstance;
+
   bool get _firebaseReady => Firebase.apps.isNotEmpty;
 
-  DatabaseReference _ref(String path) =>
-      FirebaseDatabase.instanceFor(app: Firebase.app(), databaseURL: _dbUrl)
-          .ref(path);
+  DatabaseReference _ref(String path) {
+    _dbInstance ??= FirebaseDatabase.instanceFor(
+      app: Firebase.app(),
+      databaseURL: _dbUrl,
+    );
+    return _dbInstance!.ref(path);
+  }
 
   String _generateCode() {
     final rand = Random();
@@ -109,15 +119,26 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
   }
 
   /// Pushes updated session to Firebase (host only).
-  Future<void> pushUpdate(GameSession session) async {
+  Future<void> pushUpdate(GameSession session, {bool? scoresHidden}) async {
     if (!_firebaseReady) return;
     if (state.role != LiveRole.host || _roomRef == null) return;
     try {
       await _roomRef!.update({
         ...session.toJson(),
+        'scoresHidden': scoresHidden ?? state.scoresHidden,
         'lastUpdated': ServerValue.timestamp,
       });
     } catch (_) {}
+  }
+
+  /// Pushes only the hidden flag (no full session update needed).
+  Future<void> pushHidden(bool hidden) async {
+    if (!_firebaseReady) return;
+    if (state.role != LiveRole.host || _roomRef == null) return;
+    try {
+      await _roomRef!.update({'scoresHidden': hidden});
+    } catch (_) {}
+    state = state.copyWith(scoresHidden: hidden);
   }
 
   /// Joins a room as viewer. Returns error string, or null on success.
@@ -165,7 +186,8 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
           return;
         }
         final updated = GameSession.fromJson(json);
-        state = state.copyWith(viewerSession: updated);
+        final hidden = json['scoresHidden'] == true;
+        state = state.copyWith(viewerSession: updated, scoresHidden: hidden);
       } catch (_) {}
     });
 

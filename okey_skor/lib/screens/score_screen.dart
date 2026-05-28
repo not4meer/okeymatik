@@ -94,6 +94,7 @@ class ScoreScreen extends ConsumerWidget {
             session: session,
             colors: _playerColors,
             s: s,
+            showSiler: session.gameType == GameType.okey101,
             onPenalty: (id, amt) => ref.read(gameSessionProvider.notifier).addPenalty(id, amt),
           ),
           Divider(height: 1, color: context.appMuted),
@@ -106,7 +107,13 @@ class ScoreScreen extends ConsumerWidget {
             onDice: () => _openDice(context),
             onCalc: () => _openCalc(context),
             onChat: () => _openChat(context),
-            onToggleHide: () => ref.read(scoresHiddenProvider.notifier).state = !hidden,
+            onToggleHide: () {
+              final newHidden = !hidden;
+              ref.read(scoresHiddenProvider.notifier).state = newHidden;
+              if (ref.read(liveProvider).role == LiveRole.host) {
+                ref.read(liveProvider.notifier).pushHidden(newHidden);
+              }
+            },
             onUndo: session.rounds.isNotEmpty ? () => _undo(context, ref, s) : null,
           ),
           const SafeArea(
@@ -356,12 +363,14 @@ class _PenaltyRow extends StatelessWidget {
   final GameSession session;
   final List<Color> colors;
   final AppStrings s;
+  final bool showSiler;
   final void Function(String playerId, int amount) onPenalty;
 
   const _PenaltyRow({
     required this.session,
     required this.colors,
     required this.s,
+    required this.showSiler,
     required this.onPenalty,
   });
 
@@ -431,7 +440,7 @@ class _PenaltyRow extends StatelessWidget {
   ) async {
     final result = await showDialog<({int amount, bool isSiler})>(
       context: context,
-      builder: (_) => _PenaltyDialog(player: player, color: color, displayName: displayName, s: s),
+      builder: (_) => _PenaltyDialog(player: player, color: color, displayName: displayName, s: s, showSiler: showSiler),
     );
     if (result != null && context.mounted) {
       final amt = result.isSiler ? -result.amount : result.amount;
@@ -445,12 +454,14 @@ class _PenaltyDialog extends StatefulWidget {
   final Color color;
   final String displayName;
   final AppStrings s;
+  final bool showSiler;
 
   const _PenaltyDialog({
     required this.player,
     required this.color,
     required this.displayName,
     required this.s,
+    required this.showSiler,
   });
 
   @override
@@ -465,7 +476,7 @@ class _PenaltyDialogState extends State<_PenaltyDialog>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 2, vsync: this);
+    _tab = TabController(length: widget.showSiler ? 2 : 1, vsync: this);
   }
 
   @override
@@ -493,26 +504,27 @@ class _PenaltyDialogState extends State<_PenaltyDialog>
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: context.appBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: TabBar(
-              controller: _tab,
-              indicator: BoxDecoration(
-                color: context.appCard,
-                borderRadius: BorderRadius.circular(8),
+          if (widget.showSiler)
+            Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: context.appBg,
+                borderRadius: BorderRadius.circular(10),
               ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              labelColor: context.appTextMain,
-              unselectedLabelColor: context.appHint,
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-              tabs: [Tab(text: s.penalty), Tab(text: s.siler)],
+              child: TabBar(
+                controller: _tab,
+                indicator: BoxDecoration(
+                  color: context.appCard,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: context.appTextMain,
+                unselectedLabelColor: context.appHint,
+                labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                tabs: [Tab(text: s.penalty), Tab(text: s.siler)],
+              ),
             ),
-          ),
           const SizedBox(height: 16),
           AnimatedBuilder(
             animation: _tab,
@@ -948,9 +960,12 @@ class _BottomBar extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(roundLabel,
-                            style: TextStyle(
-                                color: context.appHint, fontSize: 13)),
+                        Flexible(
+                          child: Text(roundLabel,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: context.appHint, fontSize: 13)),
+                        ),
                         if (dealerName.isNotEmpty) ...[
                           Text('  ·  ',
                               style: TextStyle(

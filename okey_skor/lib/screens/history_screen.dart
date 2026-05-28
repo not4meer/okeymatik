@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 import '../core/strings.dart';
 import '../core/theme.dart';
 import '../models/game_enums.dart';
@@ -76,11 +81,19 @@ class HistoryScreen extends ConsumerWidget {
   }
 }
 
-class _HistoryCard extends StatelessWidget {
+class _HistoryCard extends StatefulWidget {
   final GameHistoryEntry entry;
   final AppStrings s;
 
   const _HistoryCard({required this.entry, required this.s});
+
+  @override
+  State<_HistoryCard> createState() => _HistoryCardState();
+}
+
+class _HistoryCardState extends State<_HistoryCard> {
+  final _screenshotCtrl = ScreenshotController();
+  bool _sharing = false;
 
   static const _colors = [
     Color(0xFF4CAF50),
@@ -89,15 +102,41 @@ class _HistoryCard extends StatelessWidget {
     Color(0xFFE91E63),
   ];
 
+  Future<void> _share() async {
+    if (_sharing) return;
+    setState(() => _sharing = true);
+    try {
+      final bytes = await _screenshotCtrl.capture(pixelRatio: 3.0);
+      if (bytes == null || !mounted) return;
+      if (kIsWeb) {
+        // Web: not supported via share_plus file sharing
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/oyun_${widget.entry.id}.png');
+      await file.writeAsBytes(bytes);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'image/png')],
+        text: 'Okeymatik oyun özeti',
+      );
+    } catch (_) {} finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final entry = widget.entry;
+    final s = widget.s;
     final gameLabel = entry.gameType == GameType.okey101
         ? (entry.gameMode == GameMode.paired
             ? 'Okey 101 · ${s.pairedSuffix}'
             : 'Okey 101 · ${s.soloSuffix}')
         : s.classicOkey;
 
-    return Container(
+    return Screenshot(
+      controller: _screenshotCtrl,
+      child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.appCard,
@@ -116,11 +155,31 @@ class _HistoryCard extends StatelessWidget {
               const Spacer(),
               Text(_formatDate(entry.playedAt, s),
                   style: TextStyle(color: context.appHint, fontSize: 11)),
+              const SizedBox(width: 6),
+              if (!kIsWeb)
+                GestureDetector(
+                  onTap: _share,
+                  child: _sharing
+                      ? const SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        )
+                      : Icon(Icons.share_rounded, size: 16, color: context.appHint),
+                ),
             ],
           ),
           const SizedBox(height: 2),
-          Text(s.roundsPlayedText(entry.roundCount),
-              style: TextStyle(color: context.appDim, fontSize: 11)),
+          Row(
+            children: [
+              Text(s.roundsPlayedText(entry.roundCount),
+                  style: TextStyle(color: context.appDim, fontSize: 11)),
+              if (entry.durationMinutes != null) ...[
+                Text('  ·  ', style: TextStyle(color: context.appDim, fontSize: 11)),
+                Text('${entry.durationMinutes} dk',
+                    style: TextStyle(color: context.appDim, fontSize: 11)),
+              ],
+            ],
+          ),
           const SizedBox(height: 10),
           ...entry.results.asMap().entries.map((e) {
             final rank = e.key + 1;
@@ -166,7 +225,7 @@ class _HistoryCard extends StatelessWidget {
           }),
         ],
       ),
-    );
+    ));
   }
 
   String _formatDate(DateTime dt, AppStrings s) {

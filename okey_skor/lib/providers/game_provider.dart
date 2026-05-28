@@ -38,13 +38,15 @@ class GameSessionNotifier extends StateNotifier<GameSession?> {
           name: e.value.trim().isEmpty ? 'Oyuncu ${e.key + 1}' : e.value.trim(),
         )).toList();
 
+    final now = DateTime.now().millisecondsSinceEpoch;
     state = GameSession(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: now.toString(),
       gameType: gameType,
       gameMode: gameMode,
       players: players,
       pairs: pairs,
       totalRounds: totalRounds,
+      startedAt: now,
     );
     _save();
     AnalyticsService.logGameStarted(gameType.name);

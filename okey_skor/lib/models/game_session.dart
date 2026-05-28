@@ -10,7 +10,8 @@ class GameSession {
   final List<Player> players;
   final List<RoundScore> rounds;
   final List<List<int>> pairs;
-  final int? totalRounds; // optional round limit, null = unlimited
+  final int? totalRounds;
+  final int? startedAt; // unix ms — when game started
 
   const GameSession({
     required this.id,
@@ -20,6 +21,7 @@ class GameSession {
     this.rounds = const [],
     this.pairs = const [],
     this.totalRounds,
+    this.startedAt,
   });
 
   GameSession copyWith({
@@ -30,6 +32,7 @@ class GameSession {
     List<RoundScore>? rounds,
     List<List<int>>? pairs,
     int? totalRounds,
+    int? startedAt,
     bool clearTotalRounds = false,
   }) {
     return GameSession(
@@ -40,6 +43,7 @@ class GameSession {
       rounds: rounds ?? this.rounds,
       pairs: pairs ?? this.pairs,
       totalRounds: clearTotalRounds ? null : (totalRounds ?? this.totalRounds),
+      startedAt: startedAt ?? this.startedAt,
     );
   }
 
@@ -65,6 +69,7 @@ class GameSession {
         'rounds': rounds.map((r) => r.toJson()).toList(),
         'pairs': pairs,
         'totalRounds': totalRounds,
+        'startedAt': startedAt,
       };
 
   factory GameSession.fromJson(Map<String, dynamic> json) => GameSession(
@@ -75,6 +80,7 @@ class GameSession {
         rounds: (json['rounds'] as List? ?? []).map((e) => RoundScore.fromJson(e as Map<String, dynamic>)).toList(),
         pairs: (json['pairs'] as List? ?? []).map((p) => List<int>.from(p as List)).toList(),
         totalRounds: json['totalRounds'] as int?,
+        startedAt: json['startedAt'] as int?,
       );
 
   String toJsonString() => jsonEncode(toJson());

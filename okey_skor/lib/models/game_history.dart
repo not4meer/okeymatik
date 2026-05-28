@@ -7,6 +7,7 @@ class GameHistoryEntry {
   final GameMode gameMode;
   final int roundCount;
   final List<GameHistoryResult> results; // sorted ascending (winner first)
+  final int? durationMinutes;
 
   const GameHistoryEntry({
     required this.id,
@@ -15,6 +16,7 @@ class GameHistoryEntry {
     required this.gameMode,
     required this.roundCount,
     required this.results,
+    this.durationMinutes,
   });
 
   String get winnerName => results.isNotEmpty ? results.first.name : '';
@@ -26,6 +28,7 @@ class GameHistoryEntry {
         'gameMode': gameMode.name,
         'roundCount': roundCount,
         'results': results.map((r) => r.toJson()).toList(),
+        'durationMinutes': durationMinutes,
       };
 
   factory GameHistoryEntry.fromJson(Map<String, dynamic> json) => GameHistoryEntry(
@@ -43,6 +46,7 @@ class GameHistoryEntry {
         results: (json['results'] as List)
             .map((r) => GameHistoryResult.fromJson(r as Map<String, dynamic>))
             .toList(),
+        durationMinutes: json['durationMinutes'] as int?,
       );
 }
 

@@ -186,7 +186,7 @@ class _GlowPainter extends CustomPainter {
         center: Alignment.center,
         radius: 0.7,
         colors: [
-          const Color(0xFF7C6EFF).withValues(alpha: 0.12),
+          AppColors.primary.withValues(alpha: 0.12),
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
