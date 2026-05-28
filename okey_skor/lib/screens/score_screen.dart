@@ -1132,7 +1132,7 @@ class _SummaryDialogState extends State<_SummaryDialog> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final imageBytes = await _screenshotCtrl.captureFromLongWidget(
-        _ResultCard(session: widget.session),
+        ResultCard(session: widget.session),
         pixelRatio: 2.0,
         context: context,
         constraints: const BoxConstraints(maxWidth: 360),
@@ -1175,6 +1175,7 @@ class _SummaryDialogState extends State<_SummaryDialog> {
 
     return AlertDialog(
       backgroundColor: context.appSurface,
+      actionsOverflowButtonSpacing: 8,
       title: Text(s.gameSummaryTitle,
           style: TextStyle(color: context.appTextMain, fontSize: 18, fontWeight: FontWeight.w700)),
       content: Column(
@@ -1193,10 +1194,13 @@ class _SummaryDialogState extends State<_SummaryDialog> {
               children: [
                 Icon(Icons.emoji_events_rounded, color: context.appPrimary, size: 22),
                 const SizedBox(width: 8),
-                Text(
-                  s.won(winner.name),
-                  style: TextStyle(
-                      color: context.appPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                Flexible(
+                  child: Text(
+                    s.won(winner.name),
+                    style: TextStyle(
+                        color: context.appPrimary, fontSize: 16, fontWeight: FontWeight.w700),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -1232,8 +1236,20 @@ class _SummaryDialogState extends State<_SummaryDialog> {
             );
           }),
           const SizedBox(height: 8),
-          Text(s.roundsPlayedText(roundCount),
-              style: TextStyle(color: context.appHint, fontSize: 12)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(s.roundsPlayedText(roundCount),
+                  style: TextStyle(color: context.appHint, fontSize: 12)),
+              if (widget.session.startedAt != null) ...[
+                Text('  ·  ', style: TextStyle(color: context.appHint, fontSize: 12)),
+                Text(
+                  '${((DateTime.now().millisecondsSinceEpoch - widget.session.startedAt!) / 60000).round().clamp(1, 9999)} dk',
+                  style: TextStyle(color: context.appHint, fontSize: 12),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
       actions: [
@@ -1260,9 +1276,9 @@ class _SummaryDialogState extends State<_SummaryDialog> {
 
 // ── Result card (rendered off-screen for PNG share) ──────
 
-class _ResultCard extends StatelessWidget {
+class ResultCard extends StatelessWidget {
   final GameSession session;
-  const _ResultCard({required this.session});
+  const ResultCard({super.key, required this.session});
 
   static const _woodA    = Color(0xFF100A04);
   static const _woodB    = Color(0xFF1E1108);

@@ -103,15 +103,13 @@ ${_rulesContext ?? ''}''';
     try {
       final response = await http
           .post(
-            Uri.parse(
-              'https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3.1-8B-Instruct/v1/chat/completions',
-            ),
+            Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ${AppConfig.hfApiKey}',
+              'Authorization': 'Bearer ${AppConfig.groqApiKey}',
             },
             body: jsonEncode({
-              'model': 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+              'model': 'llama-3.1-8b-instant',
               'messages': [
                 {'role': 'system', 'content': systemPrompt},
                 {'role': 'user', 'content': question},

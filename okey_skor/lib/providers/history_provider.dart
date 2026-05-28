@@ -67,6 +67,7 @@ class HistoryNotifier extends StateNotifier<List<GameHistoryEntry>> {
       roundCount: roundCount,
       results: results,
       durationMinutes: durationMinutes,
+      sessionData: session.toJson(),
     );
 
     final updated = [entry, ...state];
