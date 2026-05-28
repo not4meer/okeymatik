@@ -103,13 +103,15 @@ ${_rulesContext ?? ''}''';
     try {
       final response = await http
           .post(
-            Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+            Uri.parse(
+              'https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3.1-8B-Instruct/v1/chat/completions',
+            ),
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ${AppConfig.groqApiKey}',
+              'Authorization': 'Bearer ${AppConfig.hfApiKey}',
             },
             body: jsonEncode({
-              'model': 'llama-3.3-70b-versatile',
+              'model': 'meta-llama/Meta-Llama-3.1-8B-Instruct',
               'messages': [
                 {'role': 'system', 'content': systemPrompt},
                 {'role': 'user', 'content': question},
@@ -118,7 +120,7 @@ ${_rulesContext ?? ''}''';
               'max_tokens': 150,
             }),
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
