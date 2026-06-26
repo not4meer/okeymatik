@@ -60,17 +60,9 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
   static const _dbUrl =
       'https://okeymatik-1d379-default-rtdb.europe-west1.firebasedatabase.app';
 
-  static FirebaseDatabase? _dbInstance;
-
   bool get _firebaseReady => Firebase.apps.isNotEmpty;
 
-  DatabaseReference _ref(String path) {
-    _dbInstance ??= FirebaseDatabase.instanceFor(
-      app: Firebase.app(),
-      databaseURL: _dbUrl,
-    );
-    return _dbInstance!.ref(path);
-  }
+  DatabaseReference _ref(String path) => FirebaseDatabase.instance.ref(path);
 
   String _generateCode() {
     final rand = Random();
