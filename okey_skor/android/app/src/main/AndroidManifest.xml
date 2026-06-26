@@ -41,6 +41,9 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713"/>
+        <meta-data
+            android:name="privacy_policy_url"
+            android:value="https://sites.google.com/view/okeymatik"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

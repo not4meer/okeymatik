@@ -64,6 +64,8 @@
 	</array>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>PrivacyPolicyURL</key>
+	<string>https://sites.google.com/view/okeymatik</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Daha iyi bir deneyim sunmak için reklamları kişiselleştirmek amacıyla cihaz tanımlayıcınıza erişmek istiyoruz.</string>
 	<key>SKAdNetworkItems</key>
