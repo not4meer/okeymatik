@@ -70,7 +70,15 @@ class HomeScreen extends ConsumerWidget {
                       icon: Icon(Icons.ios_share_rounded,
                           color: context.appHint, size: 22),
                       tooltip: s.shareAppText,
-                      onPressed: () => Share.share(s.shareAppText, subject: 'Okeymatik'),
+                      onPressed: () async {
+                        final box = context.findRenderObject() as RenderBox?;
+                        await Share.share(
+                          s.shareAppText,
+                          subject: 'Okeymatik',
+                          sharePositionOrigin:
+                              box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+                        );
+                      },
                     ),
                   ],
                 ),
