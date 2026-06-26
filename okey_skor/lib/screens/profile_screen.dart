@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/theme.dart';
 import '../providers/premium_provider.dart';
 import '../providers/settings_provider.dart';
@@ -634,6 +636,27 @@ class _PremiumTile extends StatelessWidget {
                   cta,
                   style: const TextStyle(
                       color: Colors.black, fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (isPremium && !kIsWeb)
+              GestureDetector(
+                onTap: () {
+                  final url = defaultTargetPlatform == TargetPlatform.iOS
+                      ? 'https://apps.apple.com/account/subscriptions'
+                      : 'https://play.google.com/store/account/subscriptions';
+                  launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  ),
+                  child: const Text(
+                    'İptal Et',
+                    style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
           ],
