@@ -1132,7 +1132,10 @@ class _SummaryDialogState extends State<_SummaryDialog> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final imageBytes = await _screenshotCtrl.captureFromLongWidget(
-        ResultCard(session: widget.session),
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: ResultCard(session: widget.session),
+        ),
         pixelRatio: 2.0,
         context: context,
         constraints: const BoxConstraints(maxWidth: 360),

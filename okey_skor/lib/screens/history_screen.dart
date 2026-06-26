@@ -113,7 +113,7 @@ class _HistoryCardState extends State<_HistoryCard> {
           ? ResultCard(session: GameSession.fromJson(sessionData))
           : _HistoryReceiptCard(entry: widget.entry);
       final bytes = await _screenshotCtrl.captureFromLongWidget(
-        card,
+        Directionality(textDirection: TextDirection.ltr, child: card),
         pixelRatio: 2.0,
         context: context,
         constraints: const BoxConstraints(maxWidth: 360),

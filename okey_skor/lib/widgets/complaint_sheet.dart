@@ -34,15 +34,19 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
     setState(() => _sending = true);
 
     // Firebase backup
+    bool firebaseSaved = false;
     if (Firebase.apps.isNotEmpty) {
-      FirebaseDatabase.instance.ref('complaints').push().set({
-        'text': text,
-        'timestamp': ServerValue.timestamp,
-      }).catchError((_) {});
+      try {
+        await FirebaseDatabase.instance.ref('complaints').push().set({
+          'text': text,
+          'timestamp': ServerValue.timestamp,
+        });
+        firebaseSaved = true;
+      } catch (_) {}
     }
 
     // EmailJS
-    bool success = false;
+    bool emailSent = false;
     try {
       final response = await http.post(
         Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
@@ -60,8 +64,10 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
           },
         }),
       ).timeout(const Duration(seconds: 15));
-      success = response.statusCode == 200;
+      emailSent = response.statusCode == 200;
     } catch (_) {}
+
+    final success = firebaseSaved || emailSent;
 
     if (!mounted) return;
     setState(() {
