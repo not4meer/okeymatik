@@ -638,7 +638,7 @@ class _PremiumTile extends StatelessWidget {
                       color: Colors.black, fontSize: 13, fontWeight: FontWeight.w700),
                 ),
               ),
-            if (isPremium && !kIsWeb)
+            if (isPremium)
               GestureDetector(
                 onTap: () {
                   final url = defaultTargetPlatform == TargetPlatform.iOS
