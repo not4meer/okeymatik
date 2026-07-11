@@ -63,10 +63,9 @@ cd ios && pod install && cd ..
 ```json
 {
   "GROQ_API_KEY": "...",
-  "ADMOB_BANNER_ANDROID": "ca-app-pub-.../...",
-  "ADMOB_BANNER_IOS": "ca-app-pub-.../...",
-  "ADMOB_INTERSTITIAL_ANDROID": "ca-app-pub-.../...",
-  "ADMOB_INTERSTITIAL_IOS": "ca-app-pub-.../..."
+  "UNITY_GAME_ID_IOS": "1234567",
+  "UNITY_GAME_ID_ANDROID": "1234568",
+  "UNITY_TEST_MODE": "false"
 }
 ```
 

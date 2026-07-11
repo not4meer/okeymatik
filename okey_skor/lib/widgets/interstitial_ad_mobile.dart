@@ -1,59 +1,56 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart' as admob;
+import 'package:unity_ads_plugin/unity_ads_plugin.dart';
+import '../core/config.dart';
 
 class InterstitialAd {
-  static admob.InterstitialAd? _ad;
+  static bool _loaded = false;
   static bool _loading = false;
 
-  static String get _adUnitId {
-    if (kDebugMode) {
-      return Platform.isAndroid
-          ? 'ca-app-pub-3940256099942544/1033173712'
-          : 'ca-app-pub-3940256099942544/4411468910';
-    }
-    return Platform.isAndroid
-        ? const String.fromEnvironment('ADMOB_INTERSTITIAL_ANDROID', defaultValue: '')
-        : const String.fromEnvironment('ADMOB_INTERSTITIAL_IOS', defaultValue: '');
+  static String get _placementId {
+    return Platform.isAndroid ? AppConfig.unityInterstitialAndroid : AppConfig.unityInterstitialIOS;
   }
 
   static void preload() {
-    if (_loading || _ad != null) return;
+    if (_loading || _loaded) return;
     _loading = true;
-    admob.InterstitialAd.load(
-      adUnitId: _adUnitId,
-      request: const admob.AdRequest(),
-      adLoadCallback: admob.InterstitialAdLoadCallback(
-        onAdLoaded: (ad) {
-          _ad = ad;
-          _loading = false;
-        },
-        onAdFailedToLoad: (error) {
-          debugPrint('InterstitialAd failed: $error');
-          _loading = false;
-        },
-      ),
+    UnityAds.load(
+      placementId: _placementId,
+      onComplete: (id) {
+        _loaded = true;
+        _loading = false;
+        debugPrint('Interstitial loaded: $id');
+      },
+      onFailed: (id, error, message) {
+        _loaded = false;
+        _loading = false;
+        debugPrint('Interstitial load failed: $id $error $message');
+      },
     );
   }
 
   static Future<void> show(BuildContext context) async {
-    if (_ad == null) {
+    if (!_loaded) {
       preload();
       return;
     }
-    final ad = _ad!;
-    _ad = null;
-    ad.fullScreenContentCallback = admob.FullScreenContentCallback(
-      onAdDismissedFullScreenContent: (a) {
-        a.dispose();
+    _loaded = false;
+    UnityAds.showVideoAd(
+      placementId: _placementId,
+      onComplete: (id) {
+        debugPrint('Interstitial complete: $id');
         preload();
       },
-      onAdFailedToShowFullScreenContent: (a, _) {
-        a.dispose();
+      onFailed: (id, error, message) {
+        debugPrint('Interstitial show failed: $id $error $message');
+        preload();
+      },
+      onStart: (id) => debugPrint('Interstitial started: $id'),
+      onClick: (id) => debugPrint('Interstitial clicked: $id'),
+      onSkipped: (id) {
+        debugPrint('Interstitial skipped: $id');
         preload();
       },
     );
-    await ad.show();
   }
 }

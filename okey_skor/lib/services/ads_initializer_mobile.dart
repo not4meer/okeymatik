@@ -1,15 +1,35 @@
 import 'dart:io';
-import 'package:google_mobile_ads/google_mobile_ads.dart' as admob;
+import 'package:flutter/foundation.dart';
+import 'package:unity_ads_plugin/unity_ads_plugin.dart';
+import '../core/config.dart';
 import '../widgets/interstitial_ad_mobile.dart' as interstitial;
 
 class AdsInitializer {
+  static bool _initialized = false;
+
   static Future<void> initialize() async {
-    // AdMob requires iOS 14+; skip on older versions to avoid crash
-    if (Platform.isIOS) {
-      final version = int.tryParse(Platform.operatingSystemVersion.split(' ').last.split('.').first) ?? 0;
-      if (version < 14) return;
+    if (_initialized) return;
+
+    final gameId = Platform.isAndroid ? AppConfig.unityGameIdAndroid : AppConfig.unityGameIdIOS;
+    if (gameId.isEmpty) {
+      debugPrint('UnityAds: Game ID missing for ${Platform.operatingSystem}, ads disabled');
+      return;
     }
-    await admob.MobileAds.instance.initialize();
-    interstitial.InterstitialAd.preload();
+
+    // Debug/development'ta test mode aktif, release'de kapalı
+    final testMode = kDebugMode || AppConfig.unityTestMode;
+
+    await UnityAds.init(
+      gameId: gameId,
+      testMode: testMode,
+      onComplete: () {
+        _initialized = true;
+        debugPrint('UnityAds initialized');
+        interstitial.InterstitialAd.preload();
+      },
+      onFailed: (error, message) {
+        debugPrint('UnityAds init failed: $error $message');
+      },
+    );
   }
 }

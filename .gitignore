@@ -25,3 +25,6 @@ okey_skor/ios/Flutter/Flutter.podspec
 
 # Claude
 .claude/
+
+# Yerel yedek/deneme klasörleri
+okey_skor_temp/

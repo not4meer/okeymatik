@@ -71,6 +71,6 @@ assets/rules/
 | Ekran sürekli açık (wakelock) | ✅ |
 | Dark mode | ✅ |
 
-## Gerçek Reklam (Sonraki Aşama)
+## Gerçek Reklam
 
-`google_mobile_ads` eklenip `BannerAdWidget` ve `InterstitialAd` AdMob implementasyonuyla değiştirilir.
+Unity Ads entegre — `pubspec.yaml`'da `unity_ads_plugin`. Yayına çıkarken Unity Dashboard'dan Game ID'leri alıp `UNITY_GAME_ID_IOS` ve `UNITY_GAME_ID_ANDROID` dart-define ile geç. Placement ID'ler (`Banner_iOS`, `Interstitial_iOS`, `Banner_Android`, `Interstitial_Android`) Unity Dashboard'da bu isimlerle oluşturulmalı.
