@@ -57,6 +57,8 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
           'service_id': AppConfig.emailjsServiceId,
           'template_id': AppConfig.emailjsTemplateId,
           'user_id': AppConfig.emailjsPublicKey,
+          if (AppConfig.emailjsPrivateKey.isNotEmpty)
+            'accessToken': AppConfig.emailjsPrivateKey,
           'template_params': {
             'message': text,
             'to_email': 'ameerkhn86@gmail.com',
@@ -64,7 +66,10 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
         }),
       ).timeout(const Duration(seconds: 15));
       emailSent = response.statusCode == 200;
-    } catch (_) {}
+      debugPrint('EmailJS: status=${response.statusCode} body=${response.body}');
+    } catch (e) {
+      debugPrint('EmailJS exception: $e');
+    }
 
     final success = firebaseSaved || emailSent;
 

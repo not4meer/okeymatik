@@ -92,8 +92,29 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 style: TextStyle(fontSize: 16, color: context.appTextMain),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                  onPressed: () => _start(s), child: Text(s.startGame)),
+              // GestureDetector — ElevatedButton bazı iOS/keyboard senaryolarında
+              // tıklamayı yakalamıyor, complaint_sheet ile aynı pattern kullanılıyor
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _start(s),
+                child: Container(
+                  width: double.infinity,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: context.appPrimary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    s.startGame,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
             ],
           ),
