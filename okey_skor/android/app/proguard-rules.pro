@@ -17,3 +17,11 @@
 -keep class com.unity3d.services.** { *; }
 -dontwarn com.unity3d.ads.**
 -dontwarn com.unity3d.services.**
+
+# Play Core (Flutter'ın deferred components için)
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
+
+# Google Play Billing (in_app_purchase)
+-keep class com.android.billingclient.** { *; }
+-dontwarn com.android.billingclient.**
