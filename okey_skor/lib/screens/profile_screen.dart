@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/strings.dart';
 import '../core/theme.dart';
 import '../providers/premium_provider.dart';
 import '../providers/settings_provider.dart';
@@ -36,6 +37,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _saveName() {
     ref.read(settingsProvider.notifier).setUsername(_nameCtrl.text);
     setState(() => _editingName = false);
+  }
+
+  String _premiumSubtitleText(WidgetRef ref, AppStrings s) {
+    final product = ref.read(premiumProvider.notifier).product;
+    if (product == null) return s.premiumSubtitle;
+    return '${product.price} — ${s.premiumSubtitle.split('—').last.trim()}';
+  }
+
+  Future<void> _handleBuyPremium(BuildContext context, WidgetRef ref, AppStrings s) async {
+    AnalyticsService.logPremiumTapped();
+    final notifier = ref.read(premiumProvider.notifier);
+    if (!notifier.iapAvailable) {
+      _showSnack(context, s.iapUnavailableMsg);
+      return;
+    }
+    final ok = await notifier.buyMonthly();
+    if (!ok && context.mounted) {
+      _showSnack(context, s.iapErrorMsg);
+    }
+  }
+
+  Future<void> _handleRestore(BuildContext context, WidgetRef ref, AppStrings s) async {
+    final notifier = ref.read(premiumProvider.notifier);
+    if (!notifier.iapAvailable) {
+      _showSnack(context, s.iapUnavailableMsg);
+      return;
+    }
+    await notifier.restore();
+    if (context.mounted) {
+      _showSnack(context, ref.read(premiumProvider) ? s.premiumRestoredMsg : s.iapErrorMsg);
+    }
+  }
+
+  void _showSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -109,22 +150,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           const SizedBox(height: 10),
           _PremiumTile(
             title: s.premiumTitle,
-            subtitle: s.premiumSubtitle,
+            subtitle: _premiumSubtitleText(ref, s),
             cta: s.premiumCta,
             isPremium: ref.watch(premiumProvider),
-            onTap: () async {
-              AnalyticsService.logPremiumTapped();
-              await ref.read(premiumProvider.notifier).activate();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Premium aktif! Reklamlar kaldırıldı.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
+            onTap: () => _handleBuyPremium(context, ref, s),
           ),
+          if (!ref.watch(premiumProvider)) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => _handleRestore(context, ref, s),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(s.premiumRestore),
+              style: TextButton.styleFrom(foregroundColor: context.appHint),
+            ),
+          ],
           const SizedBox(height: 24),
 
           _SectionHeader(s.complaintSection),
@@ -375,13 +414,11 @@ class _SettingsTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
-  final Widget? trailing;
 
   const _SettingsTile({
     required this.icon,
     required this.label,
     this.onTap,
-    this.trailing,
   });
 
   @override
@@ -408,9 +445,8 @@ class _SettingsTile extends StatelessWidget {
                   ),
                 ),
               ),
-              trailing ??
-                  Icon(Icons.arrow_forward_ios_rounded,
-                      size: 14, color: context.appDim),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 14, color: context.appDim),
             ],
           ),
         ),

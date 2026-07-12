@@ -67,13 +67,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               width: double.infinity,
               color: Colors.orange.withValues(alpha: 0.15),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
+              child: const Row(
                 children: [
-                  const Icon(Icons.wifi_off_rounded, size: 16, color: Colors.orange),
-                  const SizedBox(width: 8),
+                  Icon(Icons.wifi_off_rounded, size: 16, color: Colors.orange),
+                  SizedBox(width: 8),
                   Text(
                     'İnternet bağlantısı yok',
-                    style: const TextStyle(color: Colors.orange, fontSize: 13),
+                    style: TextStyle(color: Colors.orange, fontSize: 13),
                   ),
                 ],
               ),

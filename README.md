@@ -5,8 +5,8 @@ Okey ve Okey 101 kart oyunları için skor takip, canlı masa paylaşımı ve AI
 **Platform:** Android • iOS • Web
 **State yönetimi:** Riverpod
 **Backend:** Firebase Realtime Database + Analytics + Crashlytics
-**Reklam:** Google AdMob
-**AI hakem:** Groq API (LLaMA)
+**Reklam:** Unity Ads
+**AI hakem:** Google Gemini 2.5 Flash
 
 ---
 

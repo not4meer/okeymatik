@@ -17,7 +17,7 @@ class AdsInitializer {
     }
 
     // Debug/development'ta test mode aktif, release'de kapalı
-    final testMode = kDebugMode || AppConfig.unityTestMode;
+    const testMode = kDebugMode || AppConfig.unityTestMode;
 
     await UnityAds.init(
       gameId: gameId,

@@ -29,6 +29,11 @@ class AppStrings {
   final String premiumTitle;
   final String premiumSubtitle;
   final String premiumCta;
+  final String premiumRestore;
+  final String premiumActivatedMsg;
+  final String premiumRestoredMsg;
+  final String iapUnavailableMsg;
+  final String iapErrorMsg;
   final String nameHint;
   final String idCopied;
 
@@ -163,6 +168,11 @@ class AppStrings {
     required this.premiumTitle,
     required this.premiumSubtitle,
     required this.premiumCta,
+    required this.premiumRestore,
+    required this.premiumActivatedMsg,
+    required this.premiumRestoredMsg,
+    required this.iapUnavailableMsg,
+    required this.iapErrorMsg,
     required this.nameHint,
     required this.idCopied,
     required this.endGame,
@@ -296,7 +306,12 @@ class AppStrings {
     language: 'Dil',
     premiumTitle: 'Premium Üyelik',
     premiumSubtitle: 'Aylık ₺20 — Reklamlarsız deneyim',
-    premiumCta: 'Başla',
+    premiumCta: 'Abone Ol',
+    premiumRestore: 'Satın Almayı Geri Yükle',
+    premiumActivatedMsg: 'Premium aktif! Reklamlar kaldırıldı.',
+    premiumRestoredMsg: 'Satın alma geri yüklendi.',
+    iapUnavailableMsg: 'Satın alma şu anda kullanılamıyor.',
+    iapErrorMsg: 'Bir sorun oluştu, lütfen tekrar deneyin.',
     nameHint: 'Ad gir...',
     idCopied: 'ID kopyalandı',
     endGame: 'Bitir',
@@ -442,7 +457,12 @@ class AppStrings {
     language: 'Language',
     premiumTitle: 'Premium Membership',
     premiumSubtitle: '₺20 / month — Ad-free experience',
-    premiumCta: 'Start',
+    premiumCta: 'Subscribe',
+    premiumRestore: 'Restore Purchase',
+    premiumActivatedMsg: 'Premium activated! Ads removed.',
+    premiumRestoredMsg: 'Purchase restored.',
+    iapUnavailableMsg: 'Purchases unavailable right now.',
+    iapErrorMsg: 'Something went wrong, please try again.',
     nameHint: 'Enter name...',
     idCopied: 'ID copied',
     endGame: 'End',

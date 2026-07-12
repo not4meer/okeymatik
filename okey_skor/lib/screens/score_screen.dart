@@ -1386,13 +1386,13 @@ class ResultCard extends StatelessWidget {
                   child: Stack(
                     children: [
                       // Watermark
-                      Positioned.fill(
+                      const Positioned.fill(
                         child: Center(
                           child: Opacity(
                             opacity: 0.035,
                             child: Text(
                               'OKEYMATİK',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Caveat',
                                 fontSize: 50,
                                 fontWeight: FontWeight.w900,
@@ -1447,12 +1447,12 @@ class ResultCard extends StatelessWidget {
       color: _hdrBg,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       child: Column(children: [
-        Row(
+        const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.casino_rounded, color: _inkMid, size: 12),
-            const SizedBox(width: 5),
-            const Text(
+            Icon(Icons.casino_rounded, color: _inkMid, size: 12),
+            SizedBox(width: 5),
+            Text(
               'OKEYMATİK',
               style: TextStyle(
                 color: _ink,
@@ -1502,8 +1502,8 @@ class ResultCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       child: Column(children: [
-        Row(children: [
-          const Expanded(
+        const Row(children: [
+          Expanded(
             child: Text(
               'OYUNCULAR / TAKIMLAR',
               style: TextStyle(
@@ -1515,7 +1515,7 @@ class ResultCard extends StatelessWidget {
               ),
             ),
           ),
-          const Text(
+          Text(
             'TOPLAM',
             style: TextStyle(
               fontFamily: 'Caveat',
@@ -1706,8 +1706,8 @@ class ResultCard extends StatelessWidget {
     return Container(
       color: _hdrBg,
       padding: const EdgeInsets.fromLTRB(14, 8, 10, 14),
-      child: Row(children: [
-        const Expanded(
+      child: const Row(children: [
+        Expanded(
           child: Text(
             'Okeymatik',
             textAlign: TextAlign.center,
@@ -1719,8 +1719,8 @@ class ResultCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        const _StampWidget(),
+        SizedBox(width: 8),
+        _StampWidget(),
       ]),
     );
   }
@@ -1822,7 +1822,7 @@ class ResultCard extends StatelessWidget {
     return Transform.scale(
       scaleX: flipH ? -1.0 : 1.0,
       scaleY: flipV ? -1.0 : 1.0,
-      child: SizedBox(
+      child: const SizedBox(
         width: 12,
         height: 12,
         child: CustomPaint(painter: _CornerPainter(color: _border)),

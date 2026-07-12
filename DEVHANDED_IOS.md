@@ -16,7 +16,7 @@ Bu belge, iOS tarafını (Mac ortamı) devralacak arkadaş için hazırlanmışt
 **State yönetimi:** Riverpod  
 **Backend:** Firebase (Realtime Database + Crashlytics + Analytics)  
 **Reklam:** **Unity Ads** (AdMob'dan geçildi — memory'de detay)  
-**AI hakem:** Groq API (şu an sorunlu, çalışmayabilir — kod uçmaz, hakem sessiz kalır)  
+**AI hakem:** **Google Gemini 2.5 Flash** (Groq'tan geçildi)  
 **Şikayet maili:** EmailJS → ameerkhn86@gmail.com  
 **Gizlilik URL:** https://not4meer.github.io/okeymatik/privacy.html  
 **Kullanım koşulları URL:** https://not4meer.github.io/okeymatik/terms.html  
@@ -74,7 +74,7 @@ okey_skor/lib/core/config.dart
 Dosya boş görünse bile uygulama derlenmez — mutlaka doldurulmuş olarak Ameer'den al.
 
 İçinde şunlar var:
-- Groq API key (opsiyonel — boşsa hakem çalışmaz)
+- Gemini API key (opsiyonel — boşsa hakem çalışmaz)
 - EmailJS servis ID'leri
 - Unity Ads Game ID'leri (iOS: 800084264, Android: 800084265)
 - `unityTestMode` flag (default `true`, release'de aşağıda anlatıldığı şekilde `false`)
@@ -208,7 +208,7 @@ cd okey_skor
 # Test mode kapalı release build
 flutter build ipa --release \
   --dart-define=UNITY_TEST_MODE=false \
-  --dart-define=GROQ_API_KEY=""
+  --dart-define=GEMINI_API_KEY="AQ.Ab8..."
 ```
 
 Alternatif: Xcode'dan **Product → Archive** → Distribute App → App Store Connect → Upload.

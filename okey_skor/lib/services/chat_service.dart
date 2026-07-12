@@ -103,37 +103,54 @@ ${_rulesContext ?? ''}''';
     try {
       final response = await http
           .post(
-            Uri.parse('https://api.groq.com/openai/v1/chat/completions'),
+            Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'),
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ${AppConfig.groqApiKey}',
+              'x-goog-api-key': AppConfig.geminiApiKey,
             },
             body: jsonEncode({
-              'model': 'llama-3.1-8b-instant',
-              'messages': [
-                {'role': 'system', 'content': systemPrompt},
-                {'role': 'user', 'content': question},
+              'systemInstruction': {
+                'parts': [
+                  {'text': systemPrompt},
+                ],
+              },
+              'contents': [
+                {
+                  'role': 'user',
+                  'parts': [
+                    {'text': question},
+                  ],
+                },
               ],
-              'temperature': 0.1,
-              'max_tokens': 150,
+              'generationConfig': {
+                'temperature': 0.1,
+                'maxOutputTokens': 300,
+              },
             }),
           )
           .timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final choices = data['choices'] as List?;
-        if (choices != null && choices.isNotEmpty) {
-          return (choices[0]['message']['content'] as String).trim();
+        final candidates = data['candidates'] as List?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final content = candidates[0]['content'] as Map<String, dynamic>?;
+          final parts = content?['parts'] as List?;
+          if (parts != null && parts.isNotEmpty) {
+            final text = parts[0]['text'] as String?;
+            if (text != null) return text.trim();
+          }
         }
-        return 'Yanıt alınamadı. Tekrar deneyin.';
-      } else if (response.statusCode == 401) {
-        return 'API anahtarı geçersiz.';
+        return isEn ? 'Response empty. Please try again.' : 'Yanıt alınamadı. Tekrar deneyin.';
+      } else if (response.statusCode == 400 || response.statusCode == 401 || response.statusCode == 403) {
+        return isEn ? 'API key invalid.' : 'API anahtarı geçersiz.';
+      } else if (response.statusCode == 429) {
+        return isEn ? 'Too many requests. Try again later.' : 'Çok fazla istek. Biraz sonra tekrar deneyin.';
       } else {
-        return 'Sunucu hatası (${response.statusCode}). Tekrar deneyin.';
+        return isEn ? 'Server error (${response.statusCode}). Try again.' : 'Sunucu hatası (${response.statusCode}). Tekrar deneyin.';
       }
     } catch (_) {
-      return 'Bağlantı hatası. İnternet bağlantınızı kontrol edin.';
+      return isEn ? 'Connection error. Check your internet.' : 'Bağlantı hatası. İnternet bağlantınızı kontrol edin.';
     }
   }
 }

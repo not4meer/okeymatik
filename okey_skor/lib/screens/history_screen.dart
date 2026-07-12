@@ -308,13 +308,13 @@ class _HistoryReceiptCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                Positioned.fill(
+                const Positioned.fill(
                   child: Center(
                     child: Opacity(
                       opacity: 0.035,
                       child: Text(
                         'OKEYMATİK',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 50,
                           fontWeight: FontWeight.w900,
                           color: _ink,
@@ -332,12 +332,12 @@ class _HistoryReceiptCard extends StatelessWidget {
                       color: _hdrBg,
                       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
                       child: Column(children: [
-                        Row(
+                        const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.casino_rounded, color: _inkMid, size: 12),
-                            const SizedBox(width: 5),
-                            const Text('OKEYMATİK',
+                            Icon(Icons.casino_rounded, color: _inkMid, size: 12),
+                            SizedBox(width: 5),
+                            Text('OKEYMATİK',
                                 style: TextStyle(
                                   color: _ink,
                                   fontSize: 14,
@@ -367,8 +367,8 @@ class _HistoryReceiptCard extends StatelessWidget {
                       ]),
                     ),
                     // Divider
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                       child: Divider(color: _border, thickness: 0.5),
                     ),
                     // Players
@@ -439,8 +439,8 @@ class _HistoryReceiptCard extends StatelessWidget {
                       ),
                     ),
                     // Divider
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                       child: Divider(color: _border, thickness: 0.5),
                     ),
                     // Footer

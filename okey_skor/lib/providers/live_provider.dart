@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/game_session.dart';
@@ -56,9 +55,6 @@ class LiveRoomNotifier extends StateNotifier<LiveState> {
 
   DatabaseReference? _roomRef;
   StreamSubscription<DatabaseEvent>? _sub;
-
-  static const _dbUrl =
-      'https://okeymatik-1d379-default-rtdb.europe-west1.firebasedatabase.app';
 
   bool get _firebaseReady => Firebase.apps.isNotEmpty;
 

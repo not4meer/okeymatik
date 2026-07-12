@@ -6,7 +6,7 @@ Okey ve Okey 101 kart oyunları için skor takip, canlı masa paylaşımı ve AI
 **State yönetimi:** Riverpod
 **Backend:** Firebase Realtime Database + Analytics + Crashlytics
 **Reklam:** Google AdMob
-**AI hakem:** Groq API (LLaMA)
+**AI hakem:** Google Gemini 2.5 Flash
 
 ---
 
@@ -21,7 +21,7 @@ Okey ve Okey 101 kart oyunları için skor takip, canlı masa paylaşımı ve AI
 | Manuel ceza, siler, undo | ✅ |
 | Taş hesaplama popup | ✅ |
 | Zar atma animasyonu | ✅ |
-| AI hakem (Groq) | ✅ |
+| AI hakem (Gemini) | ✅ |
 | Canlı masa (Firebase oda kodu ile paylaşım) | ✅ |
 | Oyun özeti + paylaşım | ✅ |
 | Geçmiş oyunlar (SharedPreferences) | ✅ |
@@ -62,9 +62,7 @@ cd ios && pod install && cd ..
 
 ```json
 {
-  "GROQ_API_KEY": "...",
-  "UNITY_GAME_ID_IOS": "1234567",
-  "UNITY_GAME_ID_ANDROID": "1234568",
+  "GEMINI_API_KEY": "AQ.Ab8... veya AIzaSy...",
   "UNITY_TEST_MODE": "false"
 }
 ```
@@ -73,7 +71,7 @@ cd ios && pod install && cd ..
 
 ```dart
 class AppConfig {
-  static const String groqApiKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
+  static const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
   static const String emailjsServiceId = String.fromEnvironment('EMAILJS_SERVICE_ID', defaultValue: '...');
   static const String emailjsTemplateId = String.fromEnvironment('EMAILJS_TEMPLATE_ID', defaultValue: '...');
   static const String emailjsPublicKey = String.fromEnvironment('EMAILJS_PUBLIC_KEY', defaultValue: '...');
