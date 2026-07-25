@@ -19,6 +19,17 @@ class AdsInitializer {
     // Debug/development'ta test mode aktif, release'de kapalı
     const testMode = kDebugMode || AppConfig.unityTestMode;
 
+    // GDPR/CCPA consent — Unity SDK bu ayarlar olmadan bazen ad servisi kısıtlıyor
+    // Kullanıcıya explicit consent göstermediğimiz için "gösterme yetkisi var" varsayıyoruz
+    // (uygulama Play Data Safety'de veri toplama beyanı verildi + privacy policy var)
+    try {
+      await UnityAds.setPrivacyConsent(PrivacyConsentType.gdpr, true);
+      await UnityAds.setPrivacyConsent(PrivacyConsentType.ccpa, true);
+      await UnityAds.setPrivacyConsent(PrivacyConsentType.pipl, true);
+    } catch (e) {
+      debugPrint('UnityAds consent set failed (plugin API mismatch): $e');
+    }
+
     await UnityAds.init(
       gameId: gameId,
       testMode: testMode,

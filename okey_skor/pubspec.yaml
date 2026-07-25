@@ -1,6 +1,6 @@
 name: okey_skor
 description: Okey ve Okey 101 skor hesaplama ve kural asistanı
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
