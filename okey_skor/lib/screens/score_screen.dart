@@ -149,7 +149,8 @@ class ScoreScreen extends ConsumerWidget {
 
         if (limit != null && newElCount == limit && context.mounted) {
           _showRoundLimitReached(context, ref);
-        } else if ((roundsBefore + 1) % 2 == 0 && context.mounted) {
+        } else if (round.label != 'Ceza' && newElCount % 2 == 0 && context.mounted) {
+          // Sadece gerçek el bitiminde (ceza değil) ve her 2 elde bir
           final isPremium = ref.read(premiumProvider);
           if (!isPremium) InterstitialAd.show(context);
         }
