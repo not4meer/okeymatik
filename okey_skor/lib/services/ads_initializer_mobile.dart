@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:unity_ads_plugin/unity_ads_plugin.dart';
 import '../core/config.dart';
@@ -16,12 +17,22 @@ class AdsInitializer {
       return;
     }
 
-    // Debug/development'ta test mode aktif, release'de kapalı
-    const testMode = kDebugMode || AppConfig.unityTestMode;
+    // iOS 14+ App Tracking Transparency prompt — Unity Ads / IDFA için gerekli
+    // Apple review bunu görmezse "no ATT prompt" ret verir
+    if (Platform.isIOS) {
+      try {
+        final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+        if (status == TrackingStatus.notDetermined) {
+          // iOS'un promptu göstermesi için kısa bekleme gerekir
+          await Future.delayed(const Duration(milliseconds: 200));
+          await AppTrackingTransparency.requestTrackingAuthorization();
+        }
+      } catch (e) {
+        debugPrint('ATT request failed: $e');
+      }
+    }
 
     // GDPR/CCPA consent — Unity SDK bu ayarlar olmadan bazen ad servisi kısıtlıyor
-    // Kullanıcıya explicit consent göstermediğimiz için "gösterme yetkisi var" varsayıyoruz
-    // (uygulama Play Data Safety'de veri toplama beyanı verildi + privacy policy var)
     try {
       await UnityAds.setPrivacyConsent(PrivacyConsentType.gdpr, true);
       await UnityAds.setPrivacyConsent(PrivacyConsentType.ccpa, true);
@@ -29,6 +40,9 @@ class AdsInitializer {
     } catch (e) {
       debugPrint('UnityAds consent set failed (plugin API mismatch): $e');
     }
+
+    // Debug/development'ta test mode aktif, release'de kapalı
+    const testMode = kDebugMode || AppConfig.unityTestMode;
 
     await UnityAds.init(
       gameId: gameId,

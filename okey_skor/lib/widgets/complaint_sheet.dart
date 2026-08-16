@@ -149,31 +149,32 @@ class _ComplaintSheetState extends State<ComplaintSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              // GestureDetector button — bypasses ElevatedButton web issues
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _send,
-                child: Container(
-                  width: double.infinity,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: _sending
-                        ? AppColors.penalty.withValues(alpha: 0.5)
-                        : AppColors.penalty,
-                    borderRadius: BorderRadius.circular(12),
+              // Material + InkWell iPad/iOS uyumu için
+              Material(
+                color: _sending
+                    ? AppColors.penalty.withValues(alpha: 0.5)
+                    : AppColors.penalty,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _sending ? null : _send,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: Center(
+                      child: _sending
+                          ? const SizedBox(
+                              width: 22, height: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : Text(s.complaintSend,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700)),
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: _sending
-                      ? const SizedBox(
-                          width: 22, height: 22,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(s.complaintSend,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700)),
                 ),
               ),
             ],

@@ -92,25 +92,26 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 style: TextStyle(fontSize: 16, color: context.appTextMain),
               ),
               const SizedBox(height: 16),
-              // GestureDetector — ElevatedButton bazı iOS/keyboard senaryolarında
-              // tıklamayı yakalamıyor, complaint_sheet ile aynı pattern kullanılıyor
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _start(s),
-                child: Container(
-                  width: double.infinity,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: context.appPrimary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    s.startGame,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+              // Material + InkWell iPad'de de garanti tıklanabilir
+              // (GestureDetector iPadOS 26'da bazı senaryolarda tıklamayı yakalamıyor)
+              Material(
+                color: context.appPrimary,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _start(s),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: Center(
+                      child: Text(
+                        s.startGame,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ),

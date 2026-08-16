@@ -58,11 +58,23 @@ class ScoreScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(session.gameType == GameType.okey101 ? 'Okey 101' : s.classicOkey),
-        leading: TextButton(
-          onPressed: () => _confirmEnd(context, ref, s),
-          child: Text(
-            s.endGame,
-            style: const TextStyle(color: AppColors.penalty, fontSize: 13, fontWeight: FontWeight.w700),
+        // iPad'de AppBar leading TextButton dar tap alanı yaratıyor, InkWell ile
+        // manuel tap target genişletildi
+        leadingWidth: 90,
+        leading: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _confirmEnd(context, ref, s),
+            child: SizedBox(
+              width: 90,
+              height: kToolbarHeight,
+              child: Center(
+                child: Text(
+                  s.endGame,
+                  style: const TextStyle(color: AppColors.penalty, fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
           ),
         ),
         actions: [
@@ -140,7 +152,6 @@ class ScoreScreen extends ConsumerWidget {
         final session = ref.read(gameSessionProvider)!;
         final elsBefore =
             session.rounds.where((r) => r.label != 'Ceza').length;
-        final roundsBefore = session.rounds.length;
         ref.read(gameSessionProvider.notifier).addRound(round);
 
         final newElCount =
