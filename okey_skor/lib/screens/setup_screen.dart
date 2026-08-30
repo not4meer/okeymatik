@@ -92,26 +92,22 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 style: TextStyle(fontSize: 16, color: context.appTextMain),
               ),
               const SizedBox(height: 16),
-              // Material + InkWell iPad'de de garanti tıklanabilir
-              // (GestureDetector iPadOS 26'da bazı senaryolarda tıklamayı yakalamıyor)
-              Material(
-                color: context.appPrimary,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => _start(s),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: Center(
-                      child: Text(
-                        s.startGame,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+              // Standart ElevatedButton — iOS 26 dahil tüm platformlarda test edilmiş
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => _start(s),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.appPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    s.startGame,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),

@@ -613,22 +613,26 @@ class _PremiumTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isPremium ? null : onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              context.appPrimary.withValues(alpha: isPremium ? 0.08 : 0.15),
-              context.appPrimary.withValues(alpha: isPremium ? 0.04 : 0.08),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: isPremium ? null : onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                context.appPrimary.withValues(alpha: isPremium ? 0.08 : 0.15),
+                context.appPrimary.withValues(alpha: isPremium ? 0.04 : 0.08),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.appPrimary.withValues(alpha: 0.3)),
           ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: context.appPrimary.withValues(alpha: 0.3)),
-        ),
         child: Row(
           children: [
             Container(
@@ -697,6 +701,7 @@ class _PremiumTile extends StatelessWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }
