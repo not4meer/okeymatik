@@ -17,6 +17,7 @@ okey_skor/ios/.symlinks/
 okey_skor/ios/Pods/
 okey_skor/ios/Flutter/Flutter.framework
 okey_skor/ios/Flutter/Flutter.podspec
+okey_skor/ios/Runner/GoogleService-Info.plist
 
 # IDE
 .idea/
