@@ -1186,8 +1186,18 @@ class _SummaryDialogState extends State<_SummaryDialog> {
     } catch (e, st) {
       debugPrint('Paylasim hatasi: $e\n$st');
       if (mounted) {
+        // Teşhis için gerçek hatayı göster: iPhone'daki başarısızlığın sebebi
+        // uzaktan tespit edilemedi, kullanıcı raporu kesin olsun.
+        final detail = e.toString();
         messenger.showSnackBar(
-          const SnackBar(content: Text('Paylaşım başarısız')),
+          SnackBar(
+            duration: const Duration(seconds: 8),
+            content: Text(
+              'Paylaşım başarısız\n'
+              '${detail.length > 220 ? detail.substring(0, 220) : detail}',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
         );
       }
     } finally {
