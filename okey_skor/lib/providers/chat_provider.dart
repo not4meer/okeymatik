@@ -39,9 +39,19 @@ class ChatNotifier extends StateNotifier<List<ChatMessage>> {
   Future<void> send(String question, {GameType? activeGame}) async {
     if (question.trim().isEmpty) return;
 
+    // Karşılama mesajı hariç önceki turlar bağlam olarak gider.
+    final history = [
+      for (final m in state.skip(1)) ChatTurn(m.text, m.isUser),
+    ];
+
     state = [...state, ChatMessage(text: question, isUser: true)];
 
-    final answer = await _svc.answer(question, activeGame, language: _language);
+    final answer = await _svc.answer(
+      question,
+      activeGame,
+      language: _language,
+      history: history,
+    );
     state = [...state, ChatMessage(text: answer, isUser: false)];
   }
 

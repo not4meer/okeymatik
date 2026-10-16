@@ -116,7 +116,7 @@ class ScoreScreen extends ConsumerWidget {
             onChat: () => _openChat(context),
             onToggleHide: () {
               final newHidden = !hidden;
-              ref.read(scoresHiddenProvider.notifier).state = newHidden;
+              ref.read(scoresHiddenProvider.notifier).setHidden(newHidden);
               if (ref.read(liveProvider).role == LiveRole.host) {
                 ref.read(liveProvider.notifier).pushHidden(newHidden);
               }
@@ -209,7 +209,11 @@ class ScoreScreen extends ConsumerWidget {
       builder: (_) => _SummaryDialog(session: session, s: s),
     ).then((_) async {
       if (!context.mounted) return;
-      ref.read(scoresHiddenProvider.notifier).state = false;
+      // Oyun bitti: canlı oda da kapanmalı, yoksa izleyiciler bitmiş masada
+      // asılı kalır ve host sonraki açılışta boş odayı geri yükler.
+      await ref.read(liveProvider.notifier).leaveRoom();
+      if (!context.mounted) return;
+      ref.read(scoresHiddenProvider.notifier).setHidden(false);
       ref.read(gameSessionProvider.notifier).endGame();
       final settings = ref.read(settingsProvider);
       if (settings.shouldShowRating && context.mounted) {
@@ -1135,8 +1139,21 @@ class _SummaryDialogState extends State<_SummaryDialog> {
   ];
 
   Future<void> _shareImage(BuildContext context) async {
+    if (_sharing) return;
     setState(() => _sharing = true);
     final messenger = ScaffoldMessenger.of(context);
+
+    // iPad'de UIActivityViewController bir popover çapası ister; null geçilirse
+    // iOS hata fırlatır. Yakalama başlamadan, ağaç sabitken hesapla.
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = (box != null && box.hasSize)
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.fromCenter(
+            center: MediaQuery.of(context).size.center(Offset.zero),
+            width: 1,
+            height: 1,
+          );
+
     try {
       final imageBytes = await _screenshotCtrl.captureFromLongWidget(
         Directionality(
@@ -1158,11 +1175,16 @@ class _SummaryDialogState extends State<_SummaryDialog> {
         final tmpDir = await getTemporaryDirectory();
         final file = File('${tmpDir.path}/okeymatik_result.png');
         await file.writeAsBytes(imageBytes);
-        xFile = XFile(file.path);
+        xFile = XFile(file.path, mimeType: 'image/png');
       }
-      await Share.shareXFiles([xFile], text: 'Okeymatik');
+      await Share.shareXFiles(
+        [xFile],
+        text: 'Okeymatik',
+        sharePositionOrigin: origin,
+      );
       AnalyticsService.logScreenshotTaken();
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('Paylasim hatasi: $e\n$st');
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(content: Text('Paylaşım başarısız')),

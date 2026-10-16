@@ -17,7 +17,25 @@ final gameSessionProvider = StateNotifierProvider<GameSessionNotifier, GameSessi
   return GameSessionNotifier(ref.watch(storageServiceProvider));
 });
 
-final scoresHiddenProvider = StateProvider<bool>((_) => false);
+/// Skorların gizli olup olmadığı — uygulama kapanıp açılsa da korunur.
+/// Kullanıcı tekrar açana kadar gizli kalır.
+final scoresHiddenProvider = StateNotifierProvider<ScoresHiddenNotifier, bool>((ref) {
+  return ScoresHiddenNotifier(ref.watch(sharedPreferencesProvider));
+});
+
+class ScoresHiddenNotifier extends StateNotifier<bool> {
+  final SharedPreferences _prefs;
+  static const _key = 'scores_hidden';
+
+  ScoresHiddenNotifier(this._prefs) : super(_prefs.getBool(_key) ?? false);
+
+  void setHidden(bool value) {
+    state = value;
+    _prefs.setBool(_key, value);
+  }
+
+  void toggle() => setHidden(!state);
+}
 
 class GameSessionNotifier extends StateNotifier<GameSession?> {
   final StorageService _storage;

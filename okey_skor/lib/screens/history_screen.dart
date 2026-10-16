@@ -107,6 +107,18 @@ class _HistoryCardState extends State<_HistoryCard> {
   Future<void> _share() async {
     if (_sharing) return;
     setState(() => _sharing = true);
+    final messenger = ScaffoldMessenger.of(context);
+
+    // iPad popover çapası — null geçilirse iOS share sheet hata verir.
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = (box != null && box.hasSize)
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.fromCenter(
+            center: MediaQuery.of(context).size.center(Offset.zero),
+            width: 1,
+            height: 1,
+          );
+
     try {
       final sessionData = widget.entry.sessionData;
       final Widget card = sessionData != null
@@ -128,8 +140,19 @@ class _HistoryCardState extends State<_HistoryCard> {
         await file.writeAsBytes(bytes);
         xFile = XFile(file.path, mimeType: 'image/png');
       }
-      await Share.shareXFiles([xFile], text: 'Okeymatik oyun özeti');
-    } catch (_) {} finally {
+      await Share.shareXFiles(
+        [xFile],
+        text: 'Okeymatik oyun özeti',
+        sharePositionOrigin: origin,
+      );
+    } catch (e, st) {
+      debugPrint('Paylasim hatasi: $e\n$st');
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Paylaşım başarısız')),
+        );
+      }
+    } finally {
       if (mounted) setState(() => _sharing = false);
     }
   }

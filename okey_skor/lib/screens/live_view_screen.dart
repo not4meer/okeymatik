@@ -31,23 +31,38 @@ class LiveViewScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        titleSpacing: 12,
         title: Row(
           children: [
-            const _LiveBadge(),
-            const SizedBox(width: 10),
-            Text(
-              session.gameType == GameType.okey101 ? 'Okey 101' : s.classicOkey,
-              style: const TextStyle(fontSize: 15),
+            _LiveBadge(online: live.isConnected),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                session.gameType == GameType.okey101 ? 'Okey 101' : s.classicOkey,
+                style: const TextStyle(fontSize: 15),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Text(
-              '${s.roomPrefix} ${live.roomCode}',
-              style: TextStyle(fontSize: 12, color: context.appHint),
-            ),
+          Text(
+            '${s.roomPrefix} ${live.roomCode}',
+            style: TextStyle(fontSize: 12, color: context.appHint),
+          ),
+          IconButton(
+            tooltip: 'Yenile',
+            visualDensity: VisualDensity.compact,
+            onPressed: live.isRefreshing
+                ? null
+                : () => ref.read(liveProvider.notifier).refresh(),
+            icon: live.isRefreshing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh_rounded, size: 20),
           ),
           TextButton(
             onPressed: () async {
@@ -59,7 +74,11 @@ class LiveViewScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: _LiveScoreTable(session: session, totalLabel: s.total, scoresHidden: live.scoresHidden),
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(liveProvider.notifier).refresh(),
+        child: _LiveScoreTable(
+            session: session, totalLabel: s.total, scoresHidden: live.scoresHidden),
+      ),
       bottomNavigationBar: SafeArea(
         child: Container(
           color: context.appSurface,
@@ -133,7 +152,8 @@ class _ViewerBtn extends StatelessWidget {
 }
 
 class _LiveBadge extends StatefulWidget {
-  const _LiveBadge();
+  final bool online;
+  const _LiveBadge({this.online = true});
 
   @override
   State<_LiveBadge> createState() => _LiveBadgeState();
@@ -159,30 +179,31 @@ class _LiveBadgeState extends State<_LiveBadge> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _anim,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-        decoration: BoxDecoration(
-          color: Colors.red.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.red.withValues(alpha: 0.5)),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.circle, color: Colors.red, size: 7),
-            SizedBox(width: 4),
-            Text('CANLI',
-                style: TextStyle(
-                    color: Colors.red,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1)),
-          ],
-        ),
+    final online = widget.online;
+    final color = online ? Colors.red : context.appHint;
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, color: color, size: 7),
+          const SizedBox(width: 4),
+          Text(online ? 'CANLI' : 'ÇEVRİMDIŞI',
+              style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1)),
+        ],
       ),
     );
+    // Çevrimdışıyken yanıp sönme durur — donmuş veri belli olsun.
+    return online ? FadeTransition(opacity: _anim, child: badge) : badge;
   }
 }
 
@@ -262,6 +283,7 @@ class _LiveScoreTable extends StatelessWidget {
         Divider(height: 1, color: context.appMuted),
         Expanded(
           child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             itemCount: rounds.length + 1,
             separatorBuilder: (_, __) => Divider(height: 1, color: context.appMuted),
             itemBuilder: (ctx, index) {

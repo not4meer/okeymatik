@@ -38,10 +38,20 @@ class PremiumNotifier extends StateNotifier<bool> {
   ProductDetails? get product => _iap.monthlyProduct;
   bool get iapAvailable => _iap.isAvailable;
   bool get iapLoading => _iap.isLoading;
+  bool get iapReady => _iap.isReady;
 
-  Future<bool> buyMonthly() => _iap.buyMonthly();
+  /// Satın alma kullanılamıyorsa gösterilecek gerçek sebep.
+  String get unavailableReason => _iap.unavailableReason;
 
-  Future<void> restore() => _iap.restorePurchases();
+  Future<bool> buyMonthly() async {
+    lastError = null;
+    return _iap.buyMonthly();
+  }
+
+  Future<void> restore() async {
+    lastError = null;
+    await _iap.restorePurchases();
+  }
 
   Future<void> _setPremium(bool value) async {
     await _prefs.setBool(_key, value);

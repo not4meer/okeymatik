@@ -48,25 +48,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _handleBuyPremium(BuildContext context, WidgetRef ref, AppStrings s) async {
     AnalyticsService.logPremiumTapped();
     final notifier = ref.read(premiumProvider.notifier);
-    if (!notifier.iapAvailable) {
-      _showSnack(context, s.iapUnavailableMsg);
-      return;
-    }
     final ok = await notifier.buyMonthly();
     if (!ok && context.mounted) {
-      _showSnack(context, s.iapErrorMsg);
+      // Gerçek sebebi göster: mağazada ürün yok, cihazda satın alma kapalı vb.
+      _showSnack(context, notifier.lastError ?? s.iapErrorMsg);
     }
   }
 
   Future<void> _handleRestore(BuildContext context, WidgetRef ref, AppStrings s) async {
     final notifier = ref.read(premiumProvider.notifier);
-    if (!notifier.iapAvailable) {
-      _showSnack(context, s.iapUnavailableMsg);
-      return;
-    }
     await notifier.restore();
-    if (context.mounted) {
-      _showSnack(context, ref.read(premiumProvider) ? s.premiumRestoredMsg : s.iapErrorMsg);
+    if (!context.mounted) return;
+    if (ref.read(premiumProvider)) {
+      _showSnack(context, s.premiumRestoredMsg);
+    } else {
+      _showSnack(context, notifier.lastError ?? s.iapErrorMsg);
     }
   }
 
